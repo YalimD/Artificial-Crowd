@@ -5,7 +5,7 @@ public class CameraScript : MonoBehaviour {
 	void Start () {
 	//demo
 	}
-    float timeRemaining = 0;
+    float timeRemaining = 0.0;
     int frameNum = 0;
 	// Update is called once per frame
 	void Update () {
