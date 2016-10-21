@@ -4,7 +4,7 @@ public class CameraScript : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-	
+	//demo
 	}
     float timeRemaining = 0;
     int frameNum = 0;
