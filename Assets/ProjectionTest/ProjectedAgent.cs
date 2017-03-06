@@ -15,13 +15,18 @@ using System.Collections;
 public class ProjectedAgent: MonoBehaviour {
 
     // Properties
-    Vector3 velocity;
-    Vector3 pos;
-    int AgentId;
+    private Vector3 velocity;
+    private Vector3 pos;
+    private int AgentId;
 
+    //Constructor needs 3 parameters for position, velocity and id that is assigned to the agent
     ProjectedAgent(Vector3 initialPos, Vector3 initialVelocity, int id)
-    { 
-        
+    {
+        velocity = initialVelocity;
+        pos = initialPos;
+        AgentId = id;
     }
+
+    //Need to implement RVO over these agents
 
 }

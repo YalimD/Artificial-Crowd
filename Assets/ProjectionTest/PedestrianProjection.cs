@@ -26,15 +26,24 @@ public class PedestrianProjection : MonoBehaviour {
     int frameNumber; //Current frame index
     List<ProjectedAgent> realAgents; //ArrayList of real agents, we don't know their size
     public GameObject ball;
-    float distance = 5000.0F;
+    float distance = 5000.0F; //Creating distance from camera
+    int resX, resY;
 
         
 	// Load the given output file
 	void Start () {
         frameNumber = 1;
-        //I HAVE EDITED THE OUTPUT FILE TO CONTAIN THE FRAME RESOLUTION INFORMATION
+       
         frames = System.IO.File.ReadAllLines(@"Output.txt");
         Debug.Log("Number of frames loaded: " + frames.Length);
+
+        //Read the image resolution from the given output file
+        //I HAVE EDITED THE OUTPUT FILE TO CONTAIN THE FRAME RESOLUTION INFORMATION
+        string[] info = frames[0].Split(' ');
+        resX = int.Parse(info[1]);
+        resY = int.Parse(info[2]);
+
+        Debug.Log("Adjust the aspect ratio of the screen to:" + resX + "x" + resY);
 	}
 
 
@@ -55,7 +64,7 @@ public class PedestrianProjection : MonoBehaviour {
                 //Create a ray to the feet of the detected pedestrian (pos.y - scale.y/2)/3
                 //It is necessary to convert the axis of pedestrian coordinates of output file (upper left) to our axis (lower left)
                 //For this, resolution.y - (coordinate.y/3) and 
-                Ray ray = Camera.main.ScreenPointToRay(new Vector2((float.Parse(output[index + 1], CultureInfo.InvariantCulture)) / 3, 720.0f - ((float.Parse(output[index + 2], CultureInfo.InvariantCulture) - float.Parse(output[index + 6], CultureInfo.InvariantCulture) / 2) / 3)));
+                Ray ray = Camera.main.ScreenPointToRay(new Vector2((float.Parse(output[index + 1], CultureInfo.InvariantCulture)) / 3, (float) resY - ((float.Parse(output[index + 2], CultureInfo.InvariantCulture) - float.Parse(output[index + 6], CultureInfo.InvariantCulture) / 2) / 3)));
                // Debug.Log(new Vector2((int.Parse(output[index + 1]) - int.Parse(output[index + 5]) / 2) / 3, (int.Parse(output[index + 2]) - int.Parse(output[index + 6]) / 2) / 3));
                 RaycastHit hit;
                 if (Physics.Raycast(ray, out hit, distance))
