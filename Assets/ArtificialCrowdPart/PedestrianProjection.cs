@@ -21,6 +21,7 @@ using System.Globalization;
  *    projected agents to artificial agent class (Therefore, wandering in the area with random objectives)
  *    
  *  TODOS:
+ *  - RVO is under construction (initial design is done)
  *  - Using the given human model to simulate the behaviour of real agents
  *  - Working on meanshift etc for navigable area generation and debugging using the provided walkableDebug mesh
  *  - Generating the mesh from walkable areas (polygons)
@@ -29,7 +30,19 @@ using System.Globalization;
  *  
  */
 
-public class PedestrianProjection : MonoBehaviour {
+public sealed class PedestrianProjection : MonoBehaviour
+{
+
+    //Singleton 
+    private static readonly PedestrianProjection instance = new PedestrianProjection();
+
+    public static PedestrianProjection Instance
+    {
+        get
+        {
+            return instance;
+        }
+    }
 
     //CONSTANTS
 
@@ -41,42 +54,43 @@ public class PedestrianProjection : MonoBehaviour {
     //Determined in editor for which video output to be used
     public int videoFile = 0;
 
-    string[] frames; //Frames containing the pedestrian information
+    private string[] frames; //Frames containing the pedestrian information
 
     //As serkan magnified the image for better detection, I need to divide my coordinates with
     //the its multiplier. This info is given in the first line of the output file
-    int magnificationMultiplier;
-    int frameNumber; //Current frame index
-    int resX, resY; //Resolution of given frames
+    private int magnificationMultiplier;
+    private int frameNumber; //Current frame index
+    private int resX, resY; //Resolution of given frames
 
-    Dictionary<int,GameObject> realAgents; //Dictionary for agents, where the key is their id
+    //Dictionary for agents, where the key is their id
+    static Dictionary<int, GameObject> realAgents = new Dictionary<int, GameObject>(); 
 
-    public GameObject model; //Dummy for agents
-    public GameObject newAgent; //Reference to the created agent
+    private GameObject model; //Dummy for agents
+    private GameObject newAgent; //Reference to the created agent
 
-    const float distance = 5000.0F; //Creating distance from camera
+    private const float distance = 5000.0F; //Creating distance from camera
 
     //Enum for video output files
-    enum VideoOutputs 
+    enum VideoOutputs
     {
         None,
         Output,
-        Output2,    
+        Output2,
     };
 
-	//The execution starts here
+    //The execution starts here
     void Start()
     {
-      
+
         frameNumber = 1;
 
         //Read the output file
-        string file = ((VideoOutputs) videoFile).ToString() + ".txt";
+        string file = ((VideoOutputs)videoFile).ToString() + ".txt";
         frames = System.IO.File.ReadAllLines(@file);
         Debug.Log("Number of frames loaded: " + frames.Length);
 
         //Initialize the dictionary of agents
-        realAgents = new Dictionary<int, GameObject>();
+   //     realAgents = new Dictionary<int, GameObject>();
 
         //Read the image resolution from the given output file
         //I HAVE EDITED THE OUTPUT FILE TO CONTAIN THE FRAME RESOLUTION INFORMATION AND MAGNIFICATION MULTIPLIER IF IT HAS BEEN USED
@@ -86,7 +100,7 @@ public class PedestrianProjection : MonoBehaviour {
         magnificationMultiplier = int.Parse(info[3]);
 
         //Load the pedestrian model
-        model = Resources.Load("TempAgent", typeof(GameObject)) as GameObject;
+        model = Resources.Load("ProjectedAgent", typeof(GameObject)) as GameObject;
 
         Debug.Log("The aspect ratio of the output file is :" + resX + "x" + resY + " with multipication multiplier " + magnificationMultiplier);
 
@@ -135,25 +149,31 @@ public class PedestrianProjection : MonoBehaviour {
      * TODO: Relate those certain angles to camera coordinates
      * 
      */
+
+    const float minAngle = 15.0f;
+    const float maxAngle = 60.0f;
+
     bool verifyDetectorSize(String height, RaycastHit hit)
     {
         //Find the angle ray makes with camera
-        float angle = (float) (180 * Math.Asin(Math.Abs(transform.position.y - hit.point.y) / (Vector3.Distance(transform.position, hit.point))) / Math.PI);
+        float angle = (float)(180 * Math.Asin(Math.Abs(transform.position.y - hit.point.y) / (Vector3.Distance(transform.position, hit.point))) / Math.PI);
         //Debug.Log("The angle is " + angle);
 
         //Angles are subject to change (I am thinking of relating them to the positioning of the camera)
-        return  (15.0f < angle) && (angle < 50.0f);
+        return (minAngle < angle) && (angle < maxAngle);
         //return (floatFromText(width, true) * floatFromText(height, true)) * hit.distance >= 250000; //Old size comparator
     }
 
-	/* Update is called once per frame
+    /* Update is called once per frame
      * Starting from first frame, on each frame passed in game, update the agents 
      * Each time:
      *  - Project pedestrians if they have not been added before
      *  - Check their location each frame, for any misdetections
      *  - Update their velocity according to given output file (NOT DONE YET)
+     *  
      */
-	void Update () {
+    void Update()
+    {
 
         //If there are still frames to process
         if (frameNumber < frames.Length)
@@ -164,7 +184,7 @@ public class PedestrianProjection : MonoBehaviour {
             //Debug.Log("Frame Number:" + frameNumber + " with " + output.Length +  " agent detector input read ( " + ((output.Length - 2) / 7)  +  ")");
 
             //-1 as last space is also counted as a string
-            for (int index = 1; index < output.Length-1; index = index + 7)
+            for (int index = 1; index < output.Length - 1; index = index + 7)
             {
                 //Create a ray to the feet of the detected pedestrian (pos.y - scale.y/2) / magnificationMultiplier
                 //It is necessary to convert the axis of pedestrian coordinates of output file (upper left) to our axis (lower left)
@@ -172,23 +192,23 @@ public class PedestrianProjection : MonoBehaviour {
 
                 //We need to adjust the coordinates related to the resolution of the screen which is used.
 
-                float rayX = floatFromText(output[index + 1],true);
-            //    float rayY = (float)resY - (floatFromTextGenerator(output[index + 2]) - (floatFromTextGenerator(output[index + 6])) / 2) / magnificationMultiplier;
+                float rayX = floatFromText(output[index + 1], true);
+                //    float rayY = (float)resY - (floatFromTextGenerator(output[index + 2]) - (floatFromTextGenerator(output[index + 6])) / 2) / magnificationMultiplier;
                 float rayY = feetAdjuster(output[index + 2], output[index + 6]);
-               // Ray ray = Camera.main.ScreenPointToRay(new Vector2(rayX / resX * Screen.width , rayY / resY * Screen.height));
+                // Ray ray = Camera.main.ScreenPointToRay(new Vector2(rayX / resX * Screen.width , rayY / resY * Screen.height));
                 Ray ray = rayGenerator(rayX, rayY);
-           
+
                 // Debug.Log("Ray: " + new Vector2(rayX / resX * Screen.width, rayY / resY * Screen.height));
-               
+
                 RaycastHit hit;
-             //   Debug.Log("Agent ID in file: " + int.Parse(output[index]) + " with loc " + float.Parse(output[index + 1], CultureInfo.InvariantCulture) + " - " + float.Parse(output[index + 2], CultureInfo.InvariantCulture));
+                //   Debug.Log("Agent ID in file: " + int.Parse(output[index]) + " with loc " + float.Parse(output[index + 1], CultureInfo.InvariantCulture) + " - " + float.Parse(output[index + 2], CultureInfo.InvariantCulture));
                 int readId = int.Parse(output[index]);
                 //Debug.Log(readId);
                 GameObject tryOutput; //Used for trygetvalue method
 
-                if (Physics.Raycast(ray, out hit, distance) && !realAgents.TryGetValue(readId, out tryOutput) && verifyDetectorSize(output[index + 6],hit)) //New agent
+                if (Physics.Raycast(ray, out hit, distance) && !realAgents.TryGetValue(readId, out tryOutput) && verifyDetectorSize(output[index + 6], hit)) //New agent
                 {
-                    Debug.Log("Agent with " + readId + " created");
+                    //   Debug.Log("Agent with " + readId + " created");
 
                     //Hold the reference to the newly created agent
                     Vector3 agentPos = new Vector3(hit.point.x, hit.point.y/* + model.transform.lossyScale.y * 4*/, hit.point.z);
@@ -215,17 +235,17 @@ public class PedestrianProjection : MonoBehaviour {
 
                     Vector3 agentVelocity = velocityGenerator(output, index, agentPos);
 
-                    newAgent = (GameObject)Instantiate(model, agentPos, new Quaternion());
+                    newAgent = (GameObject)Instantiate(model, agentPos + Vector3.up * 5, new Quaternion());
 
                     //DEBUGING THE LOCATION ONLY 
-                   // agentVelocity = Vector3.zero;
+                    // agentVelocity = Vector3.zero;
 
                     //Modify the agent's parameters for its management.
-                    newAgent.GetComponent<ProjectedAgent>().createAgent(agentPos, agentVelocity, readId);
+                    newAgent.GetComponent<ProjectedAgent>().createAgent(agentVelocity, readId);
 
                     realAgents.Add(readId, newAgent);
                     //Debug.Log(hit);
-                } 
+                }
 
                 /* If the agent already exists in the dictionary, we need to assess its current state.
                  * The detector which is attached to the agent might not be valid, best way to detect that is to 
@@ -234,29 +254,37 @@ public class PedestrianProjection : MonoBehaviour {
                  *      - The detector made an error
                  *  If it is valid, update its velocity
                  */
-                else if (Physics.Raycast(ray, out hit, distance) && realAgents.TryGetValue(readId, out tryOutput)) 
+                else if (Physics.Raycast(ray, out hit, distance) && realAgents.TryGetValue(readId, out tryOutput))
                 {
                     Vector3 proposedPos = new Vector3(hit.point.x, hit.point.y /*+ model.transform.lossyScale.y * 4*/, hit.point.z);
                     GameObject checkedAgent = realAgents[readId];
-                    if (Vector3.Distance(checkedAgent.GetComponent<ProjectedAgent>().getPosition(), proposedPos) > velocityDifferenceThreshold)
+                    if (checkedAgent != null)
                     {
-                        //Get rid of the agent
+                        if (Vector3.Distance(checkedAgent.GetComponent<ProjectedAgent>().Pos, proposedPos) > velocityDifferenceThreshold)
+                        {
+                            //Get rid of the agent
 
-                        Debug.Log("Agent with id " + readId + " is destroyed");
+                            //      Debug.Log("Agent with id " + readId + " is destroyed");
 
-                        realAgents.Remove(readId);
-                        Destroy(checkedAgent);
-                    }
-                    else //Update the velocity
-                    {
-                        checkedAgent.GetComponent<Rigidbody>().velocity = velocityGenerator(output, index, proposedPos);
+                            removeAgent(readId, checkedAgent);
+                        }
+                        else //Update the velocity
+                        {
+                            checkedAgent.GetComponent<ProjectedAgent>().Velocity = velocityGenerator(output, index, proposedPos);
+                        }
                     }
                 }
             }
             frameNumber++;
         }
 
-        
-	}
 
+    }
+
+    internal void removeAgent(int agentId, GameObject agent)
+    {
+        //TODO: Remove from simulation too
+        realAgents.Remove(agentId);
+        Destroy(agent);
+    }
 }

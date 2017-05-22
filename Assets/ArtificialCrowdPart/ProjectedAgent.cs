@@ -1,53 +1,55 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-
 /*
  * Written by Yalım Doğan
  * 
  * A very basic agent model that has a stickman prefab and maintains a velocity starting from an initial spawn point.
- * Should be coupled with the Agent class from RVO where it determines its behaviour
+ * Should include a reference to its Agent object from RVO where it determines its behaviour. 
+ * 
+ * The velocity of this agent is given by PedestrianProjection class, it cannot be modified by RVO (There is an option for that)
+ * But the Agent reference inside should be updated with velocity read from file. There is no goal in RVO, just preferred velocity.
+ * This enables wandering.
+ * 
+ * BUT if the simulation ends, the control should be given to ArtificialAgent (the simulation must end ?)
  * 
  */
 
-
 public class ProjectedAgent: MonoBehaviour{
 
+    //The RVO:Agent reference
+    RVO.Agent agentReference;
+
     // Properties
-    public Vector3 velocity;
-    private Vector3 pos;
-    public int agentId;
-    private Rigidbody rg;
-    private const float velocityMultiplier = 5.0f; //Used for speeding up the velocity, as it is not suitable for simulation.
+    private int agentId; //This is the id which is given by the projection TODO: Rename this
+  //  private Rigidbody rg;
+    private const float velocityMultiplier = 1.0f; //Used for speeding up the velocity, as it is not suitable for simulation.
+    private Vector3 velocity;
 
-    //Constructor needs 3 parameters for position, velocity and id that is assigned to the agent
-    public void createAgent(Vector3 initialPos, Vector3 initialVelocity, int id)
+    //Accessors mutators
+    public Vector3 Velocity { set { velocity = value * velocityMultiplier; } get { return velocity; } }
+    public Vector3 Pos { get { return transform.position; } }
+    public int AgentId { get; set; }
+
+    //Constructor need 1 parameter id that is assigned to the agent
+    public void createAgent(Vector3 initialVelocity, int id)
     {
-        velocity = initialVelocity;
-        pos = initialPos;
+        velocity = initialVelocity * velocityMultiplier;
         agentId = id;
-    }
-
-    public Vector3 getVelocity()
-    {
-        return velocity;
-    }
-
-    public Vector3 getPosition()
-    {
-        return pos;
-    }
-
-    public int getId()
-    {
-        return agentId;
     }
 
     void Update()
     {
-        rg = GetComponent<Rigidbody>();
-      //  Debug.Log("velocity of agent " + agentId + " is " + velocity);
-        rg.velocity = velocity * velocityMultiplier;
+     
+    //    Debug.Log("velocity of agent " + agentId + " is " + rg.velocity);
+        transform.Translate(velocity * velocityMultiplier);
+
+        //Destroy the agent if fallen below certain height
+        if (transform.position.y < 2)
+        {
+            PedestrianProjection.Instance.removeAgent(agentId, transform.gameObject);  
+        }
+
     }
 
     //Need to implement RVO over these agents
