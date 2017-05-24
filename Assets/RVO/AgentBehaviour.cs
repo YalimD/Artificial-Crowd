@@ -40,22 +40,23 @@ namespace RVO
             }
         }
 
-        public const float maxNumberOfAgents = 10;
-        Dictionary<int, GameObject> artificialAgents; //The list of agents in the simulation 
+        public const float maxNumberOfAgents = 5;
+        Dictionary<int, GameObject> artificialAgents; //TODO: Use this list of agents in the simulation 
         private GameObject agentModel; //Dummy model for the agents
-
+        List<GameObject> artificialAgents2;
         //OPTIONS FOR RVO ABOUT THE AGENTS
-        float numOfAgents = 0f; //Total number of agents in the simulation
+        float numOfAgents = maxNumberOfAgents; //Total number of agents in the simulation
         int K = 5; //Number of neigbours
-        float neighbourRange = 40f; //The range of visible area
-      //  int startAngle = -90; //-179 to 180 for close to original. 
-    //    int endAngle = 90; //Should be positive RELATED TO GRAPHICS PROJECT, UNRELATED FOR NOW
-        float reactionSpeed = 100f; //Keep this high, so that agents react to neighbors faster
+        float neighbourRange = 5f; //The range of visible area
+        //  int startAngle = -90; //-179 to 180 for close to original. 
+        //    int endAngle = 90; //Should be positive RELATED TO GRAPHICS PROJECT, UNRELATED FOR NOW
+        float reactionSpeed = 1000f; //Keep this high, so that agents react to neighbors faster
 
         // Initialize the artificial agents on the area.Assign goals randomly at a radius around the center of the square
         void Start()
         {
             artificialAgents = new Dictionary<int, GameObject>();
+            artificialAgents2 = new List<GameObject>();
             agentModel = Resources.Load("ArtificialAgent", typeof(GameObject)) as GameObject;
             instantiateSimulation();
             //PedestrianProjection.Instance.test();
@@ -66,7 +67,7 @@ namespace RVO
         /*Initializes the goals of the artificial agents
          */
         private void defineGoals()
-        { 
+        {
             /*  GOALS
             *   LEFT-SOUTH -130 / -46
             *   LEFT-NORTH -135 / -20
@@ -75,11 +76,11 @@ namespace RVO
             *   RIGHT NORTH  -64 / -24
             */
             goals = new List<Vector2>();
-            goals.Add ( new Vector2 (-130,-46));
-            goals.Add ( new Vector2 (-135,-20));
-            goals.Add ( new Vector2 (-100,-60));
-            goals.Add ( new Vector2 (-90,-54));
-            goals.Add ( new Vector2 (-64,-24));
+            goals.Add(new Vector2(-130, -46));
+           // goals.Add(new Vector2(-135, -20));
+            goals.Add(new Vector2(-100, -60));
+           // goals.Add(new Vector2(-90, -54));
+           // goals.Add(new Vector2(-64, -24));
         }
 
         //Clear the simulation, add agents and define goals
@@ -91,37 +92,38 @@ namespace RVO
             Simulator.Instance.setTimeStep(1f);
 
             //Initiate the agent properties, these will also help us modify the agent behavior using the RVO simulation
-            //TODO: Play with the parameters to see their effect on the simulation
-            Simulator.Instance.setAgentDefaults(neighbourRange, K, reactionSpeed, 10.0f, 4f, 2.0f, new Vector2(0.0f, 0.0f));
+            Simulator.Instance.setAgentDefaults(neighbourRange, K, reactionSpeed, 10.0f, 1.3f, 1f, new Vector2(0.0f, 0.0f));
 
             //Create the initial crowd of agents, depending on the current unocupied locations of the projected agents
-            //TODO: How do we convert the plane coordinates into the 2d coordinates required by the RVO ? 
             //Actually, we don't need a complicated conversion, the z coordinate will be given to the RVO as y and y coordinate from RVO
             //will be considered as Z.
 
-            for (int artificialAgentId = 1; artificialAgentId < maxNumberOfAgents; artificialAgentId++)
+            for (int artificialAgentId = 0; artificialAgentId < maxNumberOfAgents; artificialAgentId++)
             {
-                //TODO: We need to detect the enterence points to the area using the extraction of the navigable areas
                 //Generate them at the main area first, with goal of a random exit point (given manualy for now)
                 //Generate random points and goals later (which will be determined individually)
 
                 // SPAWN THEM FROM ANY OF THE GOALS, THE GOAL OF THE AGENT SHOULD BE DIFFERENT FROM ITS ORIGIN
-                Vector2 origin = goals[(int) Math.Floor(UnityEngine.Random.value * goals.Count)];
+                Vector2 origin = goals[(int)Math.Floor(UnityEngine.Random.value * goals.Count)];
 
-                GameObject newArtAgent = (GameObject)Instantiate(agentModel, new Vector3(origin.x_,3,origin.y_), new Quaternion());
+                origin = goals[artificialAgentId % goals.Count];
 
-           
+                GameObject newArtAgent = (GameObject)Instantiate(agentModel, new Vector3(origin.x_, 3, origin.y_), new Quaternion());
+
+
                 //Initialize the RVO part of the agent by connecting the reference to the
                 //related new agent
                 int agentId;
                 RVO.Agent agentReference = Simulator.Instance.addAgent(origin, true, out agentId);
                 Simulator.Instance.setAgentPosition(agentId, origin);
 
-                newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentId,agentReference);
+                newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentId, agentReference);
 
                 artificialAgents.Add(artificialAgentId, newArtAgent);
+                artificialAgents2.Add(newArtAgent);
 
-                //TODO: Give the goals to the newly created agents
+                newArtAgent.GetComponent<NavMeshAgent>().SetDestination(new Vector3((float)goals[(artificialAgentId + 1) % goals.Count].x(), 0f, (float)goals[(artificialAgentId + 1) % goals.Count].y()));
+
 
             }
             /*
@@ -156,18 +158,18 @@ namespace RVO
 
         // Update the RVO simulation 
         void Update()
-        {/*
-#if RVO_OUTPUT_TIME_AND_POSITIONS
-          * Simulator.Instance.getAgentPosition(i)
-                sim.updateVisualization();
-#endif
-            sim.setPreferredVelocities();
-          * 
-
+        {
+            foreach (GameObject ag in artificialAgents2)
+            {
+                ag.GetComponent<ArtificialAgent>().setPreferred();
+           }
             //Apply the step for determining the required velocity for each agent on the move
             Simulator.Instance.doStep();
-            */
 
+            foreach (GameObject ag in artificialAgents2) {
+                ag.GetComponent<ArtificialAgent>().updateVelo();
+
+            }
         }
     }
 }

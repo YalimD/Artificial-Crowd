@@ -278,7 +278,6 @@ public sealed class PedestrianProjection : MonoBehaviour
             frameNumber++;
         }
 
-
     }
 
     internal void removeAgent(int agentId, GameObject agent)
