@@ -77,10 +77,10 @@ namespace RVO
             */
             goals = new List<Vector2>();
             goals.Add(new Vector2(-130, -46));
-           // goals.Add(new Vector2(-135, -20));
+            goals.Add(new Vector2(-135, -20));
             goals.Add(new Vector2(-100, -60));
-           // goals.Add(new Vector2(-90, -54));
-           // goals.Add(new Vector2(-64, -24));
+            goals.Add(new Vector2(-90, -54));
+            goals.Add(new Vector2(-64, -24));
         }
 
         //Clear the simulation, add agents and define goals
@@ -108,7 +108,7 @@ namespace RVO
 
                 origin = goals[artificialAgentId % goals.Count];
 
-                GameObject newArtAgent = (GameObject)Instantiate(agentModel, new Vector3(origin.x_, 3, origin.y_), new Quaternion());
+                GameObject newArtAgent = (GameObject)Instantiate(agentModel, new Vector3(origin.x_, 3.75f, origin.y_), new Quaternion());
 
 
                 //Initialize the RVO part of the agent by connecting the reference to the
@@ -117,12 +117,12 @@ namespace RVO
                 RVO.Agent agentReference = Simulator.Instance.addAgent(origin, true, out agentId);
                 Simulator.Instance.setAgentPosition(agentId, origin);
 
-                newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentId, agentReference);
+                newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentId, agentReference,new Vector3((float)goals[(artificialAgentId + 1) % goals.Count].x(), 3.44f, (float)goals[(artificialAgentId + 1) % goals.Count].y()));
 
                 artificialAgents.Add(artificialAgentId, newArtAgent);
                 artificialAgents2.Add(newArtAgent);
 
-                newArtAgent.GetComponent<NavMeshAgent>().SetDestination(new Vector3((float)goals[(artificialAgentId + 1) % goals.Count].x(), 0f, (float)goals[(artificialAgentId + 1) % goals.Count].y()));
+             //   newArtAgent.GetComponent<NavMeshAgent>().SetDestination(new Vector3((float)goals[(artificialAgentId + 1) % goals.Count].x(), 0f, (float)goals[(artificialAgentId + 1) % goals.Count].y()));
 
 
             }
