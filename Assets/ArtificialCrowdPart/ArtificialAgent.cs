@@ -78,6 +78,7 @@ namespace RVO
         private Vector3 velocity;
         public void setPreferred ()
         {
+            transform.GetComponent<Rigidbody>().velocity = Vector3.zero;
             //Debug.Log(path.corners.Length);
             Vector2 goalDirection = new Vector2(0.0f, 0.0f);
             if (pathStatus < path.corners.Length) { 
@@ -85,12 +86,16 @@ namespace RVO
                 if (goalDirection.x() == 0.0f && goalDirection.y() == 0.0f)
                 {
                     pathStatus++;
+                    if (pathStatus < path.corners.Length)
+                    {
+                        goalDirection = new Vector2(path.corners[pathStatus].x, path.corners[pathStatus].z) - agentReference.position_;
+                    }
                 }
 
 
-                if (RVOMath.absSq(goalDirection) > 1.0f)
+                if (RVOMath.absSq(goalDirection) > 0.1f)
                 {
-                    goalDirection = RVOMath.normalize(goalDirection) / 5;
+                    goalDirection = RVOMath.normalize(goalDirection) / 10;
                 }
 
                 
@@ -113,8 +118,14 @@ namespace RVO
              * After that, in order to make sure the navAgent and RVO is on the same location, we will locate the navmesh agent according to the result of
              * RVO, as RVO loses precision and that difference shouldn't be allowed to add up.
              */
+            transform.LookAt(new Vector3(agentReference.position_.x(), transform.position.y,
+                                                               agentReference.position_.y()));
             transform.position = new Vector3(agentReference.position_.x(),transform.position.y,
                                                                agentReference.position_.y());
+
+           // transform.GetComponent<Rigidbody>().AddForce(new Vector3(agentReference.velocity_.x(),0.0f,
+           //                                                    agentReference.velocity_.y()));
+        //    transform.GetComponent<Rigidbody>().velocity = Vector3.zero;
 
            // agentReference.position_ = new Vector2(transform.position.x,transform.position.z);
           //  agentReference.velocity_ = new Vector2(navAgent.velocity.x, navAgent.velocity.z);

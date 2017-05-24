@@ -65,6 +65,7 @@ namespace RVO
 
 
         /*Initializes the goals of the artificial agents
+         * THese should include y information
          */
         private void defineGoals()
         {
