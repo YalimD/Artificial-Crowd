@@ -19,13 +19,11 @@ namespace RVO
 
         //The RVO:Agent reference
         private RVO.Agent agentReference;
-        private Vector3 goal;
-        private NavMeshPath path;
-        private int pathStatus;
+
         //Properties
 
         //Reference to navigation agent as it will determine this agent's preferred velocity
-      //  NavMeshAgent navAgent;
+        NavMeshAgent navAgent;
         private int agentId;
 
         public int AgentId { get { return agentId; } set { agentId = value; } }
@@ -34,26 +32,15 @@ namespace RVO
         // Use this for initialization
         void Start()
         {
-           // path = new NavMeshPath();
-            pathStatus = 0;
+
         }
 
-        //Added the target of the agent
-        public void createAgent(int id, RVO.Agent agentReference, Vector3 goal)
+        //Temporary
+        public void createAgent(int id, RVO.Agent agentReference)
         {
             agentId = id;
             this.agentReference = agentReference;
-            setDestination(goal);
-           // navAgent = transform.GetComponent<NavMeshAgent>();
-        }
-
-        public void setDestination(Vector3 destination)
-        {
-            goal = destination;
-            if(path == null)
-                path = new NavMeshPath();
-            NavMesh.CalculatePath(transform.position,goal,NavMesh.AllAreas, path);
-            Debug.Log(path.corners.Length);
+            navAgent = transform.GetComponent<NavMeshAgent>();
         }
 
 
@@ -71,33 +58,9 @@ namespace RVO
                 }
             }*/
         }
-
-        /* NAVMESHPATH version
-         */ 
-
-        private Vector3 velocity;
         public void setPreferred ()
         {
-            //Debug.Log(path.corners.Length);
-            Vector2 goalDirection = new Vector2(0.0f, 0.0f);
-            if (pathStatus < path.corners.Length) { 
-                goalDirection = new Vector2(path.corners[pathStatus].x,path.corners[pathStatus].z) - agentReference.position_;
-                if (goalDirection.x() == 0.0f && goalDirection.y() == 0.0f)
-                {
-                    pathStatus++;
-                }
-
-
-                if (RVOMath.absSq(goalDirection) > 1.0f)
-                {
-                    goalDirection = RVOMath.normalize(goalDirection) / 5;
-                }
-
-                
-                Debug.Log("Velocity is:" + new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y()));
-            }
-            agentReference.prefVelocity_ = goalDirection;
-
+            agentReference.prefVelocity_ = new Vector2(navAgent.velocity.x, navAgent.velocity.z);
         }
 
         public void updateVelo()
@@ -113,15 +76,29 @@ namespace RVO
              * After that, in order to make sure the navAgent and RVO is on the same location, we will locate the navmesh agent according to the result of
              * RVO, as RVO loses precision and that difference shouldn't be allowed to add up.
              */
-            transform.position = new Vector3(agentReference.position_.x(),transform.position.y,
-                                                               agentReference.position_.y());
+            if (navAgent.hasPath && navAgent.velocity.magnitude <= 1)
+             {
+                agentReference.position_ = new Vector2(transform.position.x,transform.position.z);
+                agentReference.velocity_ = new Vector2(navAgent.velocity.x, navAgent.velocity.z);
+                //agentReference.update();
 
-           // agentReference.position_ = new Vector2(transform.position.x,transform.position.z);
-          //  agentReference.velocity_ = new Vector2(navAgent.velocity.x, navAgent.velocity.z);
+             //   Debug.Log("Agent " + agentId + " with reference pos:" + agentReference.position_);
+            //    Debug.Log("Agent " + agentId + " with reference vel:" + agentReference.velocity_);
+            //    Debug.Log("Agent " + agentId + " with real vel:" + navAgent.velocity.z);
 
+             }
 
-         //   if (!navAgent.hasPath)
-         //       Debug.Log("I don't have a path!");
+            else// if (!agentReference.velocity_.Equals(new Vector2(navAgent.velocity.x, navAgent.velocity.z)))
+             {
+                 navAgent.velocity = new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y());
+               /*  Debug.Log("Agent " + agentId + " with reference pos:" + agentReference.position_);
+                 Debug.Log("Agent " + agentId + " with reference vel:" + agentReference.velocity_);
+                 Debug.Log("Agent " + agentId + " with real vel:" + navAgent.velocity.z);*/
+         
+             }
+
+            if (!navAgent.hasPath)
+                Debug.Log("I don't have a path!");
 
                // if (GetComponent<NavMeshAgent>().hasPath && !agentReference.velocity_.Equals(new Vector2(0f, 0f)) && transform.GetComponent<NavMeshAgent>().velocity.magnitude > 5){
                     //transform.GetComponent<NavMeshAgent>().velocity = new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y());
