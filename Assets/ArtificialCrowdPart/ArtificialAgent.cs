@@ -60,6 +60,7 @@ namespace RVO
         // Update is called once per frame
         void Update()
         {
+            /*
             // CUSTOM GOAL SELECTION OPTION
             if (Input.GetMouseButtonUp(0))
             {
@@ -69,7 +70,7 @@ namespace RVO
                 {
                     GetComponent<NavMeshAgent>().SetDestination(hit.point);
                 }
-            }
+            }*/
            
         }
 

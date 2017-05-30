@@ -109,7 +109,9 @@ namespace RVO
 
                 origin = goals[artificialAgentId % goals.Count];
 
-                GameObject newArtAgent = (GameObject)Instantiate(agentModel, new Vector3(origin.x_, 3.75f, origin.y_), new Quaternion());
+                //TODO: Ray to determine the y of the point to be spawned
+
+                GameObject newArtAgent = (GameObject)Instantiate(agentModel, new Vector3(origin.x_, 3.77f, origin.y_), new Quaternion());
 
 
                 //Initialize the RVO part of the agent by connecting the reference to the
