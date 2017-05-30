@@ -103,9 +103,6 @@ public sealed class PedestrianProjection : MonoBehaviour
         model = Resources.Load("ProjectedAgent", typeof(GameObject)) as GameObject;
 
         Debug.Log("The aspect ratio of the output file is :" + resX + "x" + resY + " with multipication multiplier " + magnificationMultiplier);
-        var l = new List<KeyValuePair<long,long>>();
-        l.Sort(Compare1);
-        l[0] = new KeyValuePair<long,long>(500,5);
     }
 
     static int Compare1(KeyValuePair<long, long> a, KeyValuePair<long, long> b)
