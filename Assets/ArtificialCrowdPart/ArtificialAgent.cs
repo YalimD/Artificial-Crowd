@@ -61,7 +61,7 @@ namespace RVO
         void Update()
         {
             // CUSTOM GOAL SELECTION OPTION
-          /*  if (Input.GetMouseButtonUp(0))
+            if (Input.GetMouseButtonUp(0))
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 RaycastHit hit;
@@ -69,7 +69,8 @@ namespace RVO
                 {
                     GetComponent<NavMeshAgent>().SetDestination(hit.point);
                 }
-            }*/
+            }
+           
         }
 
         /* NAVMESHPATH version
