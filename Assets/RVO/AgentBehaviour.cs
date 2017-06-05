@@ -40,7 +40,7 @@ namespace RVO
             }
         }
 
-        public const float maxNumberOfAgents = 5;
+        public const float maxNumberOfAgents = 2;
         Dictionary<int, GameObject> artificialAgents; //TODO: Use this list of agents in the simulation 
         private GameObject agentModel; //Dummy model for the agents
         List<GameObject> artificialAgents2;
@@ -79,9 +79,9 @@ namespace RVO
             goals = new List<Vector2>();
             goals.Add(new Vector2(-130, -46));
             goals.Add(new Vector2(-135, -20));
-            goals.Add(new Vector2(-100, -60));
-            goals.Add(new Vector2(-90, -54));
-            goals.Add(new Vector2(-64, -24));
+           // goals.Add(new Vector2(-100, -60));
+           // goals.Add(new Vector2(-90, -54));
+           // goals.Add(new Vector2(-64, -24));
         }
 
         //Clear the simulation, add agents and define goals
