@@ -30,6 +30,7 @@ namespace RVO
         private List<Vector2> goals;
 
         //Singleton 
+        /*
         private static readonly AgentBehaviour instance = new AgentBehaviour();
 
         public static AgentBehaviour Instance
@@ -38,25 +39,24 @@ namespace RVO
             {
                 return instance;
             }
-        }
+        }*/
 
-        public const float maxNumberOfAgents = 5;
-        Dictionary<int, GameObject> artificialAgents; //TODO: Use this list of agents in the simulation 
+        public const float maxNumberOfAgents = 2;
+       // Dictionary<int, GameObject> artificialAgents; 
         private GameObject agentModel; //Dummy model for the agents
-        List<GameObject> artificialAgents2;
+        List<GameObject> artificialAgents;
+
         //OPTIONS FOR RVO ABOUT THE AGENTS
         float numOfAgents = maxNumberOfAgents; //Total number of agents in the simulation
         int K = 5; //Number of neigbours
         float neighbourRange = 5f; //The range of visible area
-        //  int startAngle = -90; //-179 to 180 for close to original. 
-        //    int endAngle = 90; //Should be positive RELATED TO GRAPHICS PROJECT, UNRELATED FOR NOW
         float reactionSpeed = 1000f; //Keep this high, so that agents react to neighbors faster
 
         // Initialize the artificial agents on the area.Assign goals randomly at a radius around the center of the square
         void Start()
         {
-            artificialAgents = new Dictionary<int, GameObject>();
-            artificialAgents2 = new List<GameObject>();
+          //  artificialAgents = new Dictionary<int, GameObject>();
+            artificialAgents = new List<GameObject>();
             agentModel = Resources.Load("ArtificialAgent", typeof(GameObject)) as GameObject;
             instantiateSimulation();
             //PedestrianProjection.Instance.test();
@@ -77,8 +77,8 @@ namespace RVO
             */
             goals = new List<Vector2>();
             goals.Add(new Vector2(-130, -46));
-           // goals.Add(new Vector2(-135, -20));
-            goals.Add(new Vector2(-100, -60));
+            goals.Add(new Vector2(-135, -20));
+           // goals.Add(new Vector2(-100, -60));
            // goals.Add(new Vector2(-90, -54));
            // goals.Add(new Vector2(-64, -24));
         }
@@ -115,58 +115,33 @@ namespace RVO
                 //related new agent
                 int agentId;
                 RVO.Agent agentReference = Simulator.Instance.addAgent(origin, true, out agentId);
-                Simulator.Instance.setAgentPosition(agentId, origin);
+                Simulator.Instance.setAgentPosition(agentId, origin); //TODO: is this necessary ?
 
                 newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentId, agentReference);
 
-                artificialAgents.Add(artificialAgentId, newArtAgent);
-                artificialAgents2.Add(newArtAgent);
+              //  artificialAgents.Add(artificialAgentId, newArtAgent);
+                artificialAgents.Add(newArtAgent);
 
                 newArtAgent.GetComponent<NavMeshAgent>().SetDestination(new Vector3((float)goals[(artificialAgentId + 1) % goals.Count].x(), 0f, (float)goals[(artificialAgentId + 1) % goals.Count].y()));
 
 
             }
-            /*
-                for (int agentId = 1; agentId <= numOfArtificialAgents; agentId++)
-                {
-                    //We need to detect the enterence points to the area using the extraction of the navigable areas
 
-                    //For now, just assume 2D movement on the plane of the square
-                    //DOES RVO WORK ON X-Z DIMENSION? Dimension are relative to the current simulation (will be 0)
-                    Vector3 startingPos = new Vector3(-115, 1026, -47);
-                    Simulator.Instance.setAgentPosition(0, new Vector2(0, 0));
-                    //   GameObject agent = Instantiate((Object)agentModel, startingPos, new Quaternion());
-                    //Simulator.Instance.addAgent(startingPos); Returns the given id to the agent
-
-                    /*
-                     * TODO: But when a projected agent is added, it should be added here by pedestrian projection
-                     * calling a certain method. The agents should also be destroyed by pedestrian projection too.
-                     * 
-                     * TODO: The agentcLasses should modify the agent by its reference as the property of the class
-                     * It shouldn't depend on Sİmulator's setAgent class
-                     * 
-                     * TODO: Need to add removeAgent method to Sİmulator as well.
-                     * TODO: Both Pedestrian projection and agentbehaviour should have a refernce to each other
-                     *
-
-
-
-
-                }*/
+            PedestrianProjection.Instance.InitiateProjection();
 
         }
 
         // Update the RVO simulation 
         void Update()
         {
-            foreach (GameObject ag in artificialAgents2)
+            foreach (GameObject ag in artificialAgents)
             {
                 ag.GetComponent<ArtificialAgent>().setPreferred();
            }
             //Apply the step for determining the required velocity for each agent on the move
             Simulator.Instance.doStep();
 
-            foreach (GameObject ag in artificialAgents2) {
+            foreach (GameObject ag in artificialAgents) {
                 ag.GetComponent<ArtificialAgent>().updateVelo();
 
             }

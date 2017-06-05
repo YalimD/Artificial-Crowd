@@ -29,12 +29,6 @@ namespace RVO
         public int AgentId { get { return agentId; } set { agentId = value; } }
         public RVO.Agent AgentReference { get { return agentReference; } set { agentReference = value; } }
 
-        // Use this for initialization
-        void Start()
-        {
-
-        }
-
         //Temporary
         public void createAgent(int id, RVO.Agent agentReference)
         {
@@ -99,7 +93,7 @@ namespace RVO
 
             if (!navAgent.hasPath)
                 Debug.Log("I don't have a path!");
-
+            //Debug.Log(transform.GetComponent<Collider>().gameObject.name);
                // if (GetComponent<NavMeshAgent>().hasPath && !agentReference.velocity_.Equals(new Vector2(0f, 0f)) && transform.GetComponent<NavMeshAgent>().velocity.magnitude > 5){
                     //transform.GetComponent<NavMeshAgent>().velocity = new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y());
               //      transform.GetComponent<NavMeshAgent>().Warp(new Vector3(agentReference.position_.x(), 3.6f, agentReference.position_.y()));

@@ -14,66 +14,91 @@ using System.Collections;
  * BUT if the simulation ends, the control should be given to ArtificialAgent (the simulation must end ?)
  * 
  */
-
-public class ProjectedAgent: MonoBehaviour{
-
-    //The RVO:Agent reference
-    RVO.Agent agentReference;
-
-    // Properties
-    private int agentId; //This is the id which is given by the projection TODO: Rename this
-  //  private Rigidbody rg;
-    private const float velocityMultiplier = 1.0f; //Used for speeding up the velocity, as it is not suitable for simulation.
-    private Vector3 velocity;
-
-    //Accessors mutators
-    public Vector3 Velocity { set { velocity = value * velocityMultiplier; } get { return velocity; } }
-    public Vector3 Pos { get { return transform.position; } }
-    public int AgentId { get; set; }
-
-    //Constructor need 1 parameter id that is assigned to the agent
-    public void createAgent(Vector3 initialVelocity, int id)
+namespace RVO
+{
+    public class ProjectedAgent : MonoBehaviour
     {
-        velocity = initialVelocity * velocityMultiplier;
-        agentId = id;
-    }
 
-    void Update()
-    {
-     
-    //    Debug.Log("velocity of agent " + agentId + " is " + rg.velocity);
-        transform.Translate(velocity * velocityMultiplier);
+        //The RVO:Agent reference
+        RVO.Agent agentReference;
 
-        //Destroy the agent if fallen below certain height
-        if (transform.position.y < 2)
+        // Properties
+        private int trackId; //This is the id which is given by the projection 
+        private int rvoId;
+        //  private Rigidbody rg;
+        public Vector3 velocity;
+
+        //Accessors mutators
+        public Vector3 Velocity { set { velocity = value; } get { return velocity; } }
+        public Vector3 Pos { get { return transform.position; } }
+        public int TrackId { get; set; }
+        public int RvoId { get; set; }
+        public RVO.Agent AgentReference { get { return agentReference; } }
+
+        //Constructor need 1 parameter id that is assigned to the agent
+        public void createAgent(Vector3 initialVelocity, int trackid, int RVOId, RVO.Agent agentReference)
         {
-            PedestrianProjection.Instance.removeAgent(agentId, transform.gameObject);  
+            velocity = initialVelocity;
+            this.trackId = trackid;
+            rvoId = RVOId;
+            this.agentReference = agentReference;
+            //So that this agent ignores the neighboring agents in RVO. But participates the collision avoidance
         }
 
-    }
+        void Update()
+        {
+            agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z );
 
-    //Need to implement RVO over these agents
+            agentReference.position_ = new Vector2(transform.position.x , transform.position.z );
 
-    //Required methods from RVO to work
+           // Debug.Log("velocity of agent " + trackId + " is " + velocity);
+            transform.Translate(velocity);
+            transform.LookAt(velocity); 
+            
+
+            if (velocity.magnitude > 0.5f)
+            {
+                PedestrianProjection.Instance.removeAgent(trackId, transform.gameObject);
+            }
+
+        }
+
+        /* Destroy agent if it gets out of mesh. This is checked by removing it
+         * when its collider doesn't collide with the walkable mesh anymore
+         */
+
+        void OnCollisionExit(Collision collisionInfo)
+        {
+            if (collisionInfo.transform.name == "walkableDebug")
+            {
+              //  Debug.Log("Left");
+                PedestrianProjection.Instance.removeAgent(trackId, transform.gameObject);
+            }
+        }
+        
+        //Ne*ed to implement RVO over these agents
+
+        //Required methods from RVO to work
         //Reached goal
         //Change Velocity (setpreferredVelocities)
         //dostep
 
-    //Intialize the agents as randomly over the area (Do we need to initialize the grid ?)
-    //
-    /*
-    public void FixedUpdate()
-    {
-        if (!sim.reachedGoal())
+        //Intialize the agents as randomly over the area (Do we need to initialize the grid ?)
+        //
+        /*
+        public void FixedUpdate()
         {
-            sim.updateVisualization();
-            sim.setPreferredVelocities();
+            if (!sim.reachedGoal())
+            {
+                sim.updateVisualization();
+                sim.setPreferredVelocities();
 
-            //Apply the step for determining the required velocity for each agent on the move
-            FanExploration.clearVisual();
-            Simulator.Instance.doStep();
+                //Apply the step for determining the required velocity for each agent on the move
+                FanExploration.clearVisual();
+                Simulator.Instance.doStep();
 
+            }
         }
+         */
     }
-     */
 }

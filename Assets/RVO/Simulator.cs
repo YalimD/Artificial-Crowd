@@ -206,7 +206,7 @@ namespace RVO
          *  Adds the agent on the given location and returns its reference and id (through pass by reference). 
          *  isResponsive determines if the agent is responsive to its enviroment in case of RVO. If false, maxNeighbors is set to 0.
          */ 
-        internal Agent addAgent(Vector2 position, bool isResponsive, out int agentId)
+        public Agent addAgent(Vector2 position, bool isResponsive, out int agentId)
         {
 
              Agent agent = new Agent();
@@ -226,6 +226,9 @@ namespace RVO
 
              agentId = agent.id_;
 
+   
+
+             
              return agent;
         }
 
