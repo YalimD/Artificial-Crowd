@@ -187,7 +187,7 @@ namespace RVO
                     string[] output = PedestrianProjection.Instance.frames[PedestrianProjection.Instance.frameNumber].Split(',');
 
                     //Debug.Log("Frame Number:" + frameNumber + " with " + output.Length +  " agent detector input read ( " + ((output.Length - 2) / 7)  +  ")");
-
+                    Debug.Log("Frame Number:" + PedestrianProjection.Instance.frameNumber);
                     //-1 as last space is also counted as a string
                     for (int index = 1; index < output.Length - 1; index = index + 7)
                     {

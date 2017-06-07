@@ -47,6 +47,7 @@ namespace RVO
 
         void Update()
         {
+            mag = velocity.magnitude;
             agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z );
 
             agentReference.position_ = new Vector2(transform.position.x , transform.position.z );
@@ -62,6 +63,8 @@ namespace RVO
             }
 
         }
+
+        public float mag;
 
         /* Destroy agent if it gets out of mesh. This is checked by removing it
          * when its collider doesn't collide with the walkable mesh anymore

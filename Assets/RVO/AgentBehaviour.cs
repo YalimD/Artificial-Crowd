@@ -41,7 +41,7 @@ namespace RVO
             }
         }*/
 
-        public const float maxNumberOfAgents = 2;
+        public const float maxNumberOfAgents = 5;
        // Dictionary<int, GameObject> artificialAgents; 
         private GameObject agentModel; //Dummy model for the agents
         List<GameObject> artificialAgents;
@@ -59,10 +59,7 @@ namespace RVO
             artificialAgents = new List<GameObject>();
             agentModel = Resources.Load("ArtificialAgent", typeof(GameObject)) as GameObject;
             instantiateSimulation();
-            //PedestrianProjection.Instance.test();
         }
-
-
 
         /*Initializes the goals of the artificial agents
          */
@@ -78,9 +75,9 @@ namespace RVO
             goals = new List<Vector2>();
             goals.Add(new Vector2(-130, -46));
             goals.Add(new Vector2(-135, -20));
-           // goals.Add(new Vector2(-100, -60));
-           // goals.Add(new Vector2(-90, -54));
-           // goals.Add(new Vector2(-64, -24));
+            goals.Add(new Vector2(-100, -60));
+            goals.Add(new Vector2(-90, -54));
+            goals.Add(new Vector2(-64, -24));
         }
 
         //Clear the simulation, add agents and define goals
@@ -134,16 +131,18 @@ namespace RVO
         // Update the RVO simulation 
         void Update()
         {
+            //I stop and resume the navmeshagent part as it causes ossilation between navmesh velocity and rvo velocity
             foreach (GameObject ag in artificialAgents)
             {
                 ag.GetComponent<ArtificialAgent>().setPreferred();
+                ag.GetComponent<NavMeshAgent>().Stop();
            }
             //Apply the step for determining the required velocity for each agent on the move
             Simulator.Instance.doStep();
 
             foreach (GameObject ag in artificialAgents) {
                 ag.GetComponent<ArtificialAgent>().updateVelo();
-
+                ag.GetComponent<NavMeshAgent>().Resume(); //Resume so that the velocity of the path is recalculated
             }
         }
     }
