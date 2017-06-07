@@ -1,77 +1,107 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-
 /*
  * Written by Yalım Doğan
  * 
  * A very basic agent model that has a stickman prefab and maintains a velocity starting from an initial spawn point.
- * Should be coupled with the Agent class from RVO where it determines its behaviour
+ * Should include a reference to its Agent object from RVO where it determines its behaviour. 
+ * 
+ * The velocity of this agent is given by PedestrianProjection class, it cannot be modified by RVO (There is an option for that)
+ * But the Agent reference inside should be updated with velocity read from file. There is no goal in RVO, just preferred velocity.
+ * This enables wandering.
+ * 
+ * BUT if the simulation ends, the control should be given to ArtificialAgent (the simulation must end ?)
  * 
  */
-
-
-public class ProjectedAgent: MonoBehaviour{
-
-    // Properties
-    public Vector3 velocity;
-    private Vector3 pos;
-    public int agentId;
-    private Rigidbody rg;
-    private const float velocityMultiplier = 5.0f; //Used for speeding up the velocity, as it is not suitable for simulation.
-
-    //Constructor needs 3 parameters for position, velocity and id that is assigned to the agent
-    public void createAgent(Vector3 initialPos, Vector3 initialVelocity, int id)
+namespace RVO
+{
+    public class ProjectedAgent : MonoBehaviour
     {
-        velocity = initialVelocity;
-        pos = initialPos;
-        agentId = id;
-    }
 
-    public Vector3 getVelocity()
-    {
-        return velocity;
-    }
+        //The RVO:Agent reference
+        RVO.Agent agentReference;
 
-    public Vector3 getPosition()
-    {
-        return pos;
-    }
+        // Properties
+        private int trackId; //This is the id which is given by the projection 
+        private int rvoId;
+        //  private Rigidbody rg;
+        public Vector3 velocity;
 
-    public int getId()
-    {
-        return agentId;
-    }
+        //Accessors mutators
+        public Vector3 Velocity { set { velocity = value; } get { return velocity; } }
+        public Vector3 Pos { get { return transform.position; } }
+        public int TrackId { get; set; }
+        public int RvoId { get; set; }
+        public RVO.Agent AgentReference { get { return agentReference; } }
 
-    void Update()
-    {
-        rg = GetComponent<Rigidbody>();
-      //  Debug.Log("velocity of agent " + agentId + " is " + velocity);
-        rg.velocity = velocity * velocityMultiplier;
-    }
+        //Constructor need 1 parameter id that is assigned to the agent
+        public void createAgent(Vector3 initialVelocity, int trackid, int RVOId, RVO.Agent agentReference)
+        {
+            velocity = initialVelocity;
+            this.trackId = trackid;
+            rvoId = RVOId;
+            this.agentReference = agentReference;
+            //So that this agent ignores the neighboring agents in RVO. But participates the collision avoidance
+        }
 
-    //Need to implement RVO over these agents
+        void Update()
+        {
+            mag = velocity.magnitude;
+            agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z );
 
-    //Required methods from RVO to work
+            agentReference.position_ = new Vector2(transform.position.x , transform.position.z );
+
+           // Debug.Log("velocity of agent " + trackId + " is " + velocity);
+            transform.Translate(velocity);
+            transform.LookAt(velocity); 
+            
+
+            if (velocity.magnitude > 0.5f)
+            {
+                PedestrianProjection.Instance.removeAgent(trackId, transform.gameObject);
+            }
+
+        }
+
+        public float mag;
+
+        /* Destroy agent if it gets out of mesh. This is checked by removing it
+         * when its collider doesn't collide with the walkable mesh anymore
+         */
+
+        void OnCollisionExit(Collision collisionInfo)
+        {
+            if (collisionInfo.transform.name == "walkableDebug")
+            {
+              //  Debug.Log("Left");
+                PedestrianProjection.Instance.removeAgent(trackId, transform.gameObject);
+            }
+        }
+        
+        //Ne*ed to implement RVO over these agents
+
+        //Required methods from RVO to work
         //Reached goal
         //Change Velocity (setpreferredVelocities)
         //dostep
 
-    //Intialize the agents as randomly over the area (Do we need to initialize the grid ?)
-    //
-    /*
-    public void FixedUpdate()
-    {
-        if (!sim.reachedGoal())
+        //Intialize the agents as randomly over the area (Do we need to initialize the grid ?)
+        //
+        /*
+        public void FixedUpdate()
         {
-            sim.updateVisualization();
-            sim.setPreferredVelocities();
+            if (!sim.reachedGoal())
+            {
+                sim.updateVisualization();
+                sim.setPreferredVelocities();
 
-            //Apply the step for determining the required velocity for each agent on the move
-            FanExploration.clearVisual();
-            Simulator.Instance.doStep();
+                //Apply the step for determining the required velocity for each agent on the move
+                FanExploration.clearVisual();
+                Simulator.Instance.doStep();
 
+            }
         }
+         */
     }
-     */
 }
