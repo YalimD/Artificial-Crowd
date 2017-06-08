@@ -50,12 +50,12 @@ namespace RVO
         //CONSTANTS
 
         //Threshold for velocity, used for validating the detection. Subject to change
-        private const float velocityDifferenceThreshold = 0.1f;
+        private const float velocityDifferenceThreshold = 50f;
 
         //VARIABLES
 
         //Determined in editor for which video output to be used
-        public int videoFile = 1;
+        private int videoFile = 3;
         private string[] frames; //Frames containing the pedestrian information
 
         //As serkan magnified the image for better detection, I need to divide my coordinates with
@@ -78,6 +78,7 @@ namespace RVO
             None,
             Output,
             Output2,
+            Output3,
         };
 
         bool started = false;
@@ -118,7 +119,7 @@ namespace RVO
         //Returns the feet location of given origin of the detector, also reverses the y coordinate system
         float feetAdjuster(string origin, string distance)
         {
-            return (float)PedestrianProjection.Instance.resY - (floatFromText(origin, false) - (floatFromText(distance, false) / 2)) / PedestrianProjection.Instance.magnificationMultiplier;
+            return (float)PedestrianProjection.Instance.resY - ((floatFromText(origin, false) + (floatFromText(distance, false) / 2)) / PedestrianProjection.Instance.magnificationMultiplier);
         }
 
         //Generates the ray for pixel at x and y
@@ -130,8 +131,13 @@ namespace RVO
         //Generates the velocity from given position and velocity information 
         Vector3 velocityGenerator(string[] input, int index, Vector3 origin)
         {
-            Vector3 vel = new Vector3(floatFromText(input[index + 3], true), 0, -floatFromText(input[index + 4], true));
-            vel = vel + new Vector3(floatFromText(input[index + 1], true), 0, feetAdjuster(input[index + 2], input[index + 6]));
+            //Was using velocity data from output file, which was wrong
+          //  Vector3 vel = new Vector3(floatFromText(input[index + 3], true), 0, -floatFromText(input[index + 4], true));
+            //vel = vel + new Vector3(floatFromText(input[index + 1], true), 0, feetAdjuster(input[index + 2], input[index + 6]));
+
+
+            Vector3 vel = new Vector3(floatFromText(input[index + 1], true), 0, feetAdjuster(input[index + 2], input[index + 6]));
+            
 
             //Project the vel + pos (which is proposed position)
             //Ray velRay = Camera.main.ScreenPointToRay(new Vector2(agentVelocity.x / (resX) * Screen.width, ((float)resY - ((agentVelocity.z - float.Parse(output[index + 6], CultureInfo.InvariantCulture) / 2) / magnificationMultiplier)) / resY * Screen.height));
@@ -140,8 +146,8 @@ namespace RVO
             Physics.Raycast(velRay, out hit, distance);
 
             //Get the projected velocity (projected endpoint - origin)
-            vel = ((new Vector3(hit.point.x, hit.point.y/* + model.transform.lossyScale.y * 4*/, hit.point.z))) - (origin);
-
+            vel = new Vector3(hit.point.x, hit.point.y/* + model.transform.lossyScale.y * 4*/, hit.point.z) - (origin);
+           // vel = new Vector3(-vel.z, vel.y,vel.x);
             return vel;
         }
 
@@ -175,6 +181,8 @@ namespace RVO
          *  - Update their velocity according to given output file (NOT DONE YET)
          *  
          */
+
+
         void Update()
         {
             if (PedestrianProjection.Instance.started)
@@ -187,7 +195,7 @@ namespace RVO
                     string[] output = PedestrianProjection.Instance.frames[PedestrianProjection.Instance.frameNumber].Split(',');
 
                     //Debug.Log("Frame Number:" + frameNumber + " with " + output.Length +  " agent detector input read ( " + ((output.Length - 2) / 7)  +  ")");
-                    Debug.Log("Frame Number:" + PedestrianProjection.Instance.frameNumber);
+                    
                     //-1 as last space is also counted as a string
                     for (int index = 1; index < output.Length - 1; index = index + 7)
                     {
@@ -216,7 +224,7 @@ namespace RVO
                             //   Debug.Log("Agent with " + readId + " created");
 
                             //Hold the reference to the newly created agent
-                            Vector3 agentPos = new Vector3(hit.point.x, hit.point.y/* + model.transform.lossyScale.y * 4*/, hit.point.z);
+                            Vector3 agentPos = new Vector3(hit.point.x, hit.point.y /*+ 3.5f * PedestrianProjection.Instance.model.transform.localScale.y*/, hit.point.z);
 
                             /*
                              * OLD Velocity system
@@ -239,6 +247,7 @@ namespace RVO
                             */
 
                             Vector3 agentVelocity = velocityGenerator(output, index, agentPos);
+                           // Vector3 agentVelocity = Vector3.zero;
 
                             newAgent = (GameObject)Instantiate(PedestrianProjection.Instance.model, agentPos + Vector3.up * 3.5f * PedestrianProjection.Instance.model.transform.localScale.y, new Quaternion());
 
@@ -265,30 +274,34 @@ namespace RVO
                          *  If it is valid, update its velocity
                          *  TODO: We also need to check where it is currently, so we can eliminate him from simulation if he goes out of navigable areas
                          */
-                        else if (Physics.Raycast(ray, out hit, distance) && realAgents.TryGetValue(readId, out tryOutput))
+                        else if (Physics.Raycast(ray, out hit, distance) && PedestrianProjection.Instance.realAgents.TryGetValue(readId, out tryOutput))
                         {
-                            Vector3 proposedPos = new Vector3(hit.point.x, hit.point.y /*+ model.transform.lossyScale.y * 4*/, hit.point.z);
-                            GameObject checkedAgent = realAgents[readId];
-                            Vector3 checkedVelocity = velocityGenerator(output, index, proposedPos);
+                            Vector3 proposedPos = new Vector3(hit.point.x, hit.point.y /*+ 3.5f * PedestrianProjection.Instance.model.transform.localScale.y*/, hit.point.z);
+                            GameObject checkedAgent = PedestrianProjection.Instance.realAgents[readId];
+                            Vector3 checkedVelocity = proposedPos - checkedAgent.GetComponent<ProjectedAgent>().Pos;
                             if (checkedAgent != null)
                             {
-                                if (/*Vector3.Distance(checkedAgent.GetComponent<ProjectedAgent>().Pos, proposedPos) > velocityDifferenceThreshold*/
-                                    checkedVelocity.magnitude > velocityDifferenceThreshold)
+                                
+                                if (Vector3.Distance(checkedAgent.GetComponent<ProjectedAgent>().Pos, proposedPos) > velocityDifferenceThreshold
+                                    /*checkedVelocity.magnitude > velocityDifferenceThreshold*/)
                                 {
                                     //Get rid of the agent
 
-                                    //      Debug.Log("Agent with id " + readId + " is destroyed");
+                                    Debug.Log("Agent with id " + readId + " is destroyed");
 
                                     PedestrianProjection.Instance.removeAgent(readId, checkedAgent);
                                 }
                                 else //Update the velocity
                                 {
-                                    checkedAgent.GetComponent<ProjectedAgent>().Velocity = checkedVelocity;
+                                    //checkedAgent.GetComponent<ProjectedAgent>().Velocity = checkedVelocity;
+                                    checkedAgent.GetComponent<ProjectedAgent>().transform.position = proposedPos + Vector3.up * 3.5f * PedestrianProjection.Instance.model.transform.localScale.y;
                                 }
                             }
                         }                        
                     }
                     PedestrianProjection.Instance.frameNumber++;
+         //           if (PedestrianProjection.Instance.frameNumber == 103)
+           //            Debug.Break();
                 }
             }
 

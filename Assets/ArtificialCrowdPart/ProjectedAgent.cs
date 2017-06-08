@@ -47,13 +47,14 @@ namespace RVO
 
         void Update()
         {
+            
             mag = velocity.magnitude;
             agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z );
 
             agentReference.position_ = new Vector2(transform.position.x , transform.position.z );
 
            // Debug.Log("velocity of agent " + trackId + " is " + velocity);
-            transform.Translate(velocity);
+         //   transform.Translate(velocity);
             transform.LookAt(velocity); 
             
 
