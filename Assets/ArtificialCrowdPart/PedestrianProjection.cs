@@ -249,7 +249,7 @@ namespace RVO
                             Vector3 agentVelocity = velocityGenerator(output, index, agentPos);
                            // Vector3 agentVelocity = Vector3.zero;
 
-                            newAgent = (GameObject)Instantiate(PedestrianProjection.Instance.model, agentPos + Vector3.up * 3.5f * PedestrianProjection.Instance.model.transform.localScale.y, new Quaternion());
+                            newAgent = (GameObject)Instantiate(PedestrianProjection.Instance.model, agentPos /*+ Vector3.up * 3.5f * PedestrianProjection.Instance.model.transform.localScale.y*/, new Quaternion());
 
                             //DEBUGING THE LOCATION ONLY 
                             // agentVelocity = Vector3.zero;
@@ -293,8 +293,8 @@ namespace RVO
                                 }
                                 else //Update the velocity
                                 {
-                                    //checkedAgent.GetComponent<ProjectedAgent>().Velocity = checkedVelocity;
-                                    checkedAgent.GetComponent<ProjectedAgent>().transform.position = proposedPos + Vector3.up * 3.5f * PedestrianProjection.Instance.model.transform.localScale.y;
+                                    checkedAgent.GetComponent<ProjectedAgent>().Velocity = checkedVelocity;
+                                    checkedAgent.GetComponent<ProjectedAgent>().transform.position = proposedPos; //+ Vector3.up * 3.5f * PedestrianProjection.Instance.model.transform.localScale.y;
                                 }
                             }
                         }                        

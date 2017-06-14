@@ -41,15 +41,15 @@ namespace RVO
             }
         }*/
 
-        public const float maxNumberOfAgents = 5;
+        public const float maxNumberOfAgents = 10;
        // Dictionary<int, GameObject> artificialAgents; 
         private GameObject agentModel; //Dummy model for the agents
         List<GameObject> artificialAgents;
 
         //OPTIONS FOR RVO ABOUT THE AGENTS
         float numOfAgents = maxNumberOfAgents; //Total number of agents in the simulation
-        int K = 5; //Number of neigbours
-        float neighbourRange = 5f; //The range of visible area
+        int K = 20; //Number of neigbours
+        float neighbourRange = 15f; //The range of visible area
         float reactionSpeed = 1000f; //Keep this high, so that agents react to neighbors faster
 
         // Initialize the artificial agents on the area.Assign goals randomly at a radius around the center of the square
@@ -65,19 +65,23 @@ namespace RVO
          */
         private void defineGoals()
         {
-            /*  GOALS
-            *   LEFT-SOUTH -130 / -46
-            *   LEFT-NORTH -135 / -20
-            *   RIGHT-SOUTH -100 / -60
-            *   RIGHT-CENTER -90 / -54
-            *   RIGHT NORTH  -64 / -24
-            */
+
             goals = new List<Vector2>();
             goals.Add(new Vector2(-130, -46));
             goals.Add(new Vector2(-135, -20));
             goals.Add(new Vector2(-100, -60));
             goals.Add(new Vector2(-90, -54));
             goals.Add(new Vector2(-64, -24));
+
+            //Closer to middle area
+
+            goals.Add(new Vector2(-112, -28));
+            goals.Add(new Vector2(-112, -33));
+            goals.Add(new Vector2(-116, -31));
+            goals.Add(new Vector2(-115, -50));
+            goals.Add(new Vector2(-110, -49));
+
+
         }
 
         //Clear the simulation, add agents and define goals
@@ -89,7 +93,7 @@ namespace RVO
             Simulator.Instance.setTimeStep(1f);
 
             //Initiate the agent properties, these will also help us modify the agent behavior using the RVO simulation
-            Simulator.Instance.setAgentDefaults(neighbourRange, K, reactionSpeed, 10.0f, 1.3f, 1f, new Vector2(0.0f, 0.0f));
+            Simulator.Instance.setAgentDefaults(neighbourRange, K, reactionSpeed, 10.0f, 2f, 1f, new Vector2(0.0f, 0.0f));
 
             //Create the initial crowd of agents, depending on the current unocupied locations of the projected agents
             //Actually, we don't need a complicated conversion, the z coordinate will be given to the RVO as y and y coordinate from RVO
@@ -105,7 +109,7 @@ namespace RVO
 
                 origin = goals[artificialAgentId % goals.Count];
 
-                GameObject newArtAgent = (GameObject)Instantiate(agentModel, new Vector3(origin.x_, 3, origin.y_), new Quaternion());
+                GameObject newArtAgent = (GameObject)Instantiate(agentModel, new Vector3(origin.x_, 0f, origin.y_), new Quaternion());
 
 
                 //Initialize the RVO part of the agent by connecting the reference to the
@@ -131,6 +135,7 @@ namespace RVO
         // Update the RVO simulation 
         void Update()
         {
+            
             //I stop and resume the navmeshagent part as it causes ossilation between navmesh velocity and rvo velocity
             foreach (GameObject ag in artificialAgents)
             {
