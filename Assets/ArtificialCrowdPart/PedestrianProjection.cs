@@ -7,7 +7,7 @@ using System.Globalization;
 /*
  * Written by Yalım Doğan
  * This code projects the pedestrians from given video feed onto the provided plan of the area
- * Version 0.8
+ * Version 1.0
  *  + Poles and other unnecessary obstacles are removed.
  *  + Testing for raytracing and its coordinate system
  *  + Adapting the coordinate system of given output to ray tracing
@@ -21,11 +21,9 @@ using System.Globalization;
  *    projected agents to artificial agent class (Therefore, wandering in the area with random objectives)
  *    
  *  TODOS:
- *  - Using the given human model to simulate the behaviour of real agents
  *  - Working on meanshift etc for navigable area generation and debugging using the provided walkableDebug mesh
  *  - Generating the mesh from walkable areas (polygons)
  *  - Adapting the mesh to mutiple layers for ARA*
- *  - Remove agents who left the navigable area, by deleting the id. It can be done by sudden change in position which is not prevPos + prevVel
  *  
  */
 

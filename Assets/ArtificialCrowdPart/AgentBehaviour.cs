@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System;
 
 /*
+ * RENAME THIS CLASS TO MAYBE ARTIFICIAL AGENT FACTORY
+ * 
  * Agent Behaviour code extends the simulation code provided by RVO for the
  * spawn and management of the agents. It will also consider the projected agents coming from
  * the Pedestrian Projection class. But they won't have the change in velocity, only their velocities 
@@ -57,7 +59,7 @@ namespace RVO
         {
           //  artificialAgents = new Dictionary<int, GameObject>();
             artificialAgents = new List<GameObject>();
-            agentModel = Resources.Load("ArtificialAgent", typeof(GameObject)) as GameObject;
+            agentModel = Resources.Load("AgentAngelica", typeof(GameObject)) as GameObject;
             instantiateSimulation();
         }
 

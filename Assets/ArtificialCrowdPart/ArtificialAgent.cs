@@ -17,8 +17,10 @@ namespace RVO
     public class ArtificialAgent : MonoBehaviour
     {
 
+        #region PROPERTY
         //The RVO:Agent reference
         private RVO.Agent agentReference;
+        private Animator anim;
 
         //Properties
 
@@ -29,18 +31,24 @@ namespace RVO
         public int AgentId { get { return agentId; } set { agentId = value; } }
         public RVO.Agent AgentReference { get { return agentReference; } set { agentReference = value; } }
 
+        #endregion
+
         //Temporary
         public void createAgent(int id, RVO.Agent agentReference)
         {
             agentId = id;
             this.agentReference = agentReference;
             navAgent = transform.GetComponent<NavMeshAgent>();
+            anim = transform.GetComponent<Animator>();
         }
 
 
         // Update is called once per frame
+        // Updating the animations
         void Update()
         {
+
+            anim.SetFloat("Velocity", navAgent.velocity.magnitude);
             // CUSTOM GOAL SELECTION OPTION
             if (Input.GetMouseButtonUp(0))
             {
