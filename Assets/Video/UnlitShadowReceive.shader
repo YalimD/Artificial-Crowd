@@ -1,4 +1,6 @@
-﻿Shader "Custom/ShadowDrawer"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Custom/ShadowDrawer"
 {
 	Properties
 	{
@@ -20,7 +22,7 @@
 		v2f_shadow vert_shadow(appdata_full v)
 		{
 			v2f_shadow o;
-			o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+			o.pos = UnityObjectToClipPos(v.vertex);
 			TRANSFER_VERTEX_TO_FRAGMENT(o);
 			return o;
 		}
@@ -54,7 +56,7 @@
 				v2f vert(appdata_full v)
 				{
 					v2f o;
-					o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+					o.pos = UnityObjectToClipPos(v.vertex);
 					return o;
 				}
 

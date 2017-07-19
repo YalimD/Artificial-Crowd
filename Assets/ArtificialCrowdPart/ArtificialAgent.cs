@@ -17,16 +17,25 @@ namespace RVO
     public class ArtificialAgent : MonoBehaviour
     {
 
+        public static Material selectedMat;
+
         #region PROPERTY
+
+        private Material defaultMaterial;
+        private Material defaultHairMaterial;
+
         //The RVO:Agent reference
         private RVO.Agent agentReference;
         private Animator anim;
+        private bool selected; //Is this agent currently selected by user to modify its RVO properties
+        
 
         //Properties
 
         //Reference to navigation agent as it will determine this agent's preferred velocity
-        NavMeshAgent navAgent;
+        UnityEngine.AI.NavMeshAgent navAgent;
         private int agentId;
+
 
         public int AgentId { get { return agentId; } set { agentId = value; } }
         public RVO.Agent AgentReference { get { return agentReference; } set { agentReference = value; } }
@@ -38,27 +47,32 @@ namespace RVO
         {
             agentId = id;
             this.agentReference = agentReference;
-            navAgent = transform.GetComponent<NavMeshAgent>();
+            navAgent = transform.GetComponent<UnityEngine.AI.NavMeshAgent>();
             anim = transform.GetComponent<Animator>();
+
+            defaultMaterial = transform.Find("body").GetComponent<Renderer>().material;
+            defaultHairMaterial = transform.Find("hair").GetComponent<Renderer>().material;
         }
 
 
         // Update is called once per frame
         // Updating the animations
-        void Update()
+        void FixedUpdate()
+        //void Update()
         {
-
-            anim.SetFloat("Velocity", navAgent.velocity.magnitude);
-            // CUSTOM GOAL SELECTION OPTION
-            if (Input.GetMouseButtonUp(0))
+       
+            anim.SetFloat("Velocity",navAgent.velocity.magnitude);
+            if (!AgentBehaviour.Instance.Visibility)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (Physics.Raycast(ray, out hit, 100))
-                {
-                    GetComponent<NavMeshAgent>().SetDestination(hit.point);
-                }
+                transform.Find("body").GetComponent<Renderer>().enabled = false;
+                transform.Find("hair").GetComponent<Renderer>().enabled = false;
             }
+            else
+            {
+                transform.Find("body").GetComponent<Renderer>().enabled = true;
+                transform.Find("hair").GetComponent<Renderer>().enabled = true;
+            }
+                
         }
         public void setPreferred ()
         {
@@ -114,7 +128,11 @@ namespace RVO
                  //        transform.GetComponent<NavMeshAgent>().velocity);
                 //  Debug.Log("Velocity is:" + new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y()));
            //     Debug.Log("The Velocity of agent " + agentId + " is: "  + transform.GetComponent<NavMeshAgent>().velocity);
-        }/*
+        }
+        
+        
+        
+        /*
 
         
             //Debug.Log(GetComponent<NavMeshAgent>().hasPath);
@@ -153,6 +171,42 @@ namespace RVO
                 Debug.Log("The Velocity of agent " + agentId + " is: "  + transform.GetComponent<NavMeshAgent>().velocity);
           //  }
         }*/
+
+
+        //Change the material's emission to highlight the agent
+        //TODO: For making agents invisible, change their albedo's alpha channel to 0
+        internal void setSelected()
+        {
+            this.selected = true;
+            transform.Find("body").GetComponent<Renderer>().material = selectedMat;
+            transform.Find("hair").GetComponent<Renderer>().material = selectedMat;
+        }
+
+        internal void deSelect()
+        {
+            this.selected = false;
+            transform.Find("body").GetComponent<Renderer>().material = defaultMaterial;
+            transform.Find("hair").GetComponent<Renderer>().material = defaultHairMaterial;
+        }
+
+        internal bool isSelected()
+        {
+            return selected;
+        }
+        
+        void OnCollisionExit(Collision collisionInfo)
+        {
+            if (collisionInfo.transform.tag == "Projection")
+            {
+                
+                AgentBehaviour.Instance.incrementProjectedCollision();
+            }
+            else if (collisionInfo.transform.tag == "Agent")
+            {
+                AgentBehaviour.Instance.incrementArtificialCollision();
+            }
+            Debug.Log(collisionInfo.transform.tag);
+        }
     }
 
 }
