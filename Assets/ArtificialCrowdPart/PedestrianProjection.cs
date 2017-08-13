@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -7,7 +8,7 @@ using System.Globalization;
 /*
  * Written by Yalım Doğan
  * This code projects the pedestrians from given video feed onto the provided plan of the area
- * Version 1.0
+ * Version 2.0
  *  + Poles and other unnecessary obstacles are removed.
  *  + Testing for raytracing and its coordinate system
  *  + Adapting the coordinate system of given output to ray tracing
@@ -29,6 +30,7 @@ namespace RVO
     public sealed class PedestrianProjection : MonoBehaviour
     {
        
+        //Singleton instance
         private static PedestrianProjection instance = new PedestrianProjection();
 
         public static PedestrianProjection Instance
@@ -41,13 +43,14 @@ namespace RVO
 
         //CONSTANTS
 
-        //Threshold for velocity, used for validating the detection. Subject to change
+        //Threshold for velocity, used for validating the detection. If the velocity of the detected pedestrian exceeds this, it is considered as a noise
+        //in detection system
         private const float velocityDifferenceThreshold = 50f;
 
         //VARIABLES
 
         private bool isRunning = false;
-        public bool IsSimulationRunning { get { return PedestrianProjection.Instance.isRunning; } }
+        public bool IsSimulationRunning { get { return instance.isRunning; } }
 
         //The camera viewport parameters are needed for placement of camera render on scene (as width and height are same, only one is enough)
         private float viewPortScale;
@@ -65,20 +68,21 @@ namespace RVO
         //Dictionary for agents, where the key is their id
         Dictionary<int, GameObject> realAgents = new Dictionary<int, GameObject>();
 
-        public Dictionary<int, GameObject> RealAgents { get { return PedestrianProjection.Instance.realAgents; } }
+        public Dictionary<int, GameObject> RealAgents { get { return instance.realAgents; } }
 
         private GameObject model; //Dummy for agents
         private GameObject newAgent; //Reference to the created agent
 
         private const float distance = 5000.0F; //Creating distance from camera
 
-        TestFrame video;
+        MyVideoPlayer video;
 
         //Are projected agents visible to user ?
         private bool visibility;
-        public bool Visibility { set { PedestrianProjection.Instance.visibility = value; } get { return PedestrianProjection.Instance.visibility; } }
+        public bool Visibility { set { instance.visibility = value; } get { return instance.visibility; } }
 
         //Enum for video output files
+        //TODO: DELETE THIS WHEN THE OUTPUT GETS DONE
         enum VideoOutputs
         {
             None,
@@ -89,55 +93,60 @@ namespace RVO
             Output6
         };
 
-        //The execution starts here
+        //The execution starts here (Also system is restarted from here upon call)
         public void InitiateProjection()
         {
-            PedestrianProjection.Instance.isRunning = true;
-            PedestrianProjection.Instance.frameNumber = 1;
+            //Delete all agents in the simulation if the simulation has been restarted
+            List<int> keys= instance.realAgents.Keys.ToList();
 
-            //Read the output file
+            foreach (int key in keys)
+            {
+                instance.realAgents.Remove(key);
+            }
+
+            instance.isRunning = true;
+            instance.frameNumber = 1;
+
+            //Read the output file resulted from the video
             string file = ((VideoOutputs)videoFile).ToString() + ".txt";
-            PedestrianProjection.Instance.frames = System.IO.File.ReadAllLines(@file);
+            instance.frames = System.IO.File.ReadAllLines(@file);
             Debug.Log("Number of frames loaded: " + frames.Length);
 
-            //Initialize the dictionary of agents
-            //     realAgents = new Dictionary<int, GameObject>();
-
             //Read the image resolution from the given output file
-            //I HAVE EDITED THE OUTPUT FILE TO CONTAIN THE FRAME RESOLUTION INFORMATION AND MAGNIFICATION MULTIPLIER IF IT HAS BEEN USED
             string[] info = frames[0].Split(' ');
-            PedestrianProjection.Instance.resX = int.Parse(info[1]);
-            PedestrianProjection.Instance.resY = int.Parse(info[2]);
-            PedestrianProjection.Instance.magnificationMultiplier = float.Parse(info[3]);
+            instance.resX = int.Parse(info[1]);
+            instance.resY = int.Parse(info[2]);
+            instance.magnificationMultiplier = float.Parse(info[3]);
 
             //Load the pedestrian model
-            PedestrianProjection.Instance.model = Resources.Load("ProjectedAgent", typeof(GameObject)) as GameObject;
+            instance.model = Resources.Load("ProjectedAgent", typeof(GameObject)) as GameObject;
 
-            PedestrianProjection.Instance.viewPortScale = GameObject.Find("MainCamera").transform.GetComponent<Camera>().rect.width;
+            instance.viewPortScale = GameObject.Find("MainCamera").transform.GetComponent<Camera>().rect.width;
             Debug.Log("The aspect ratio of the output file is :" + resX + "x" + resY + " with multipication multiplier " + magnificationMultiplier);
 
-            PedestrianProjection.Instance.visibility = true;
+            instance.visibility = true;
 
-            PedestrianProjection.Instance.video = GameObject.Find("MainCamera").GetComponent<TestFrame>();
+            instance.video = GameObject.Find("MainCamera").GetComponent<MyVideoPlayer>();
+
 
         }
 
         //Reads and returns the float representation of the given string
         float floatFromText(string coord, bool convert)
         {
-            return float.Parse(coord, CultureInfo.InvariantCulture) / (convert ? PedestrianProjection.Instance.magnificationMultiplier : 1);
+            return float.Parse(coord, CultureInfo.InvariantCulture) / (convert ? instance.magnificationMultiplier : 1);
         }
 
         //Returns the feet location of given origin of the detector, also reverses the y coordinate system
         float feetAdjuster(string origin, string distance)
         {
-            return (float)PedestrianProjection.Instance.resY - ((floatFromText(origin, false) + (floatFromText(distance, false) / 2)) / PedestrianProjection.Instance.magnificationMultiplier);
+            return (float)instance.resY - ((floatFromText(origin, false) + (floatFromText(distance, false) / 2)) / instance.magnificationMultiplier);
         }
 
         //Generates the ray for pixel at x and y
         Ray rayGenerator(float x, float y)
         {
-            return Camera.main.ScreenPointToRay(new Vector3(x / (PedestrianProjection.Instance.resX) * Screen.width * PedestrianProjection.Instance.viewPortScale, y / (PedestrianProjection.Instance.resY) * Screen.height * PedestrianProjection.Instance.viewPortScale, 0));
+            return Camera.main.ScreenPointToRay(new Vector3(x / (instance.resX) * Screen.width * instance.viewPortScale, y / (instance.resY) * Screen.height * instance.viewPortScale, 0));
         }
 
         //Generates the velocity from given position and velocity information 
@@ -167,8 +176,7 @@ namespace RVO
          * This method verifies the size of the detector, by inversely relating it to its distance from camera.
          * The width of the detector is not important, but the height is used. The angle between the top of the detector and the camera
          * (which is the angle created by the ray that hits the plane) should be between certain angles 
-         * TODO: Relate those certain angles to camera coordinates
-         * 
+          * 
          */
 
         const float minAngle = 15.0f;
@@ -190,21 +198,19 @@ namespace RVO
          * Each time:
          *  - Project pedestrians if they have not been added before
          *  - Check their location each frame, for any misdetections
-         *  - Update their velocity according to given output file (NOT DONE YET)
+         *  - Update their velocity according to given output file 
          *  
          */
         void FixedUpdate()
-       // void Update()
-        //public void nextFrame()
         {
-            if (PedestrianProjection.Instance.isRunning)
+            if (instance.isRunning)
             {
                 
                 //If there are still frames to process
-                if (PedestrianProjection.Instance.frameNumber < PedestrianProjection.Instance.frames.Length)
+                if (instance.frameNumber < instance.frames.Length)
                 {
                     //Frame info: FRAMENUM, AGENTID, POSX, POSY, VELX, VELY, WIDTH, HEIGHT, (SPACE AT END)
-                    string[] output = PedestrianProjection.Instance.frames[PedestrianProjection.Instance.frameNumber].Split(',');
+                    string[] output = instance.frames[instance.frameNumber].Split(',');
 
                     //Debug.Log("Frame Number:" + frameNumber + " with " + output.Length +  " agent detector input read ( " + ((output.Length - 2) / 7)  +  ")");
                     
@@ -231,12 +237,12 @@ namespace RVO
                         //Debug.Log(readId);
                         GameObject tryOutput; //Used for trygetvalue method
 
-                        if (Physics.Raycast(ray, out hit, distance) && !PedestrianProjection.Instance.realAgents.TryGetValue(readId, out tryOutput) && verifyDetectorSize(output[index + 6], hit)) //New agent
+                        if (Physics.Raycast(ray, out hit, distance) && !instance.realAgents.TryGetValue(readId, out tryOutput) && verifyDetectorSize(output[index + 6], hit)) //New agent
                         {
                             //   Debug.Log("Agent with " + readId + " created");
 
                             //Hold the reference to the newly created agent
-                            Vector3 agentPos = new Vector3(hit.point.x, hit.point.y /*+ 3.5f * PedestrianProjection.Instance.model.transform.localScale.y*/, hit.point.z);
+                            Vector3 agentPos = new Vector3(hit.point.x, hit.point.y /*+ 3.5f * instance.model.transform.localScale.y*/, hit.point.z);
 
                             /*
                              * OLD Velocity system
@@ -261,20 +267,21 @@ namespace RVO
                             Vector3 agentVelocity = velocityGenerator(output, index, agentPos);
                            // Vector3 agentVelocity = Vector3.zero;
 
-                            newAgent = (GameObject)Instantiate(PedestrianProjection.Instance.model, agentPos /*+ Vector3.up * 3.5f * PedestrianProjection.Instance.model.transform.localScale.y*/, new Quaternion());
+                            Quaternion initialOrientation = Quaternion.LookRotation(agentVelocity);
+                            initialOrientation.z = 0;
+                            initialOrientation.x  = 0;
+                            newAgent = (GameObject)Instantiate(instance.model, agentPos /*+ Vector3.up * 3.5f * instance.model.transform.localScale.y*/, initialOrientation);
 
-                            //DEBUGING THE LOCATION ONLY 
-                            // agentVelocity = Vector3.zero;
                             int agentId; //seperate from the readId, as that is used for tracking from the output file, while this is used for tracking in RVO
                             RVO.Vector2 origin = new Vector2(agentPos.x, agentPos.z);
-                            RVO.Agent agentReference = Simulator.Instance.addAgent(origin, false, out agentId);
+                            RVO.Agent agentReference = Simulator.Instance.addIrresponsiveAgent(origin);
 
-                            Simulator.Instance.setAgentPosition(agentId, origin);
+                         //   Simulator.Instance.setAgentPosition(agentReference.id_, origin);
 
                             //Modify the agent's parameters for its management.
-                            newAgent.GetComponent<ProjectedAgent>().createAgent(agentVelocity, readId, agentId, agentReference);
+                            newAgent.GetComponent<ProjectedAgent>().createAgent(agentVelocity, readId, agentReference.id_, agentReference);
 
-                            PedestrianProjection.Instance.realAgents.Add(readId, newAgent);
+                            instance.realAgents.Add(readId, newAgent);
                             newAgent.GetComponent<ProjectedAgent>().IsSync = true;
 
 
@@ -287,12 +294,11 @@ namespace RVO
                          *      - Agent left the area but its detector is now attached to someone else using the same ID
                          *      - The detector made an error
                          *  If it is valid, update its velocity
-                         *  TODO: We also need to check where it is currently, so we can eliminate him from simulation if he goes out of navigable areas
                          */
-                        else if (Physics.Raycast(ray, out hit, distance) && PedestrianProjection.Instance.realAgents.TryGetValue(readId, out tryOutput))
+                        else if (Physics.Raycast(ray, out hit, distance) && instance.realAgents.TryGetValue(readId, out tryOutput))
                         {
-                            Vector3 proposedPos = new Vector3(hit.point.x, hit.point.y /*+ 3.5f * PedestrianProjection.Instance.model.transform.localScale.y*/, hit.point.z);
-                            GameObject checkedAgent = PedestrianProjection.Instance.realAgents[readId];
+                            Vector3 proposedPos = new Vector3(hit.point.x, hit.point.y /*+ 3.5f * instance.model.transform.localScale.y*/, hit.point.z);
+                            GameObject checkedAgent = instance.realAgents[readId];
                             Vector3 checkedVelocity = proposedPos - checkedAgent.GetComponent<ProjectedAgent>().Pos;
                             if (checkedAgent != null)
                             {
@@ -304,7 +310,7 @@ namespace RVO
 
                                     Debug.Log("Agent with id " + readId + " is destroyed");
 
-                                    PedestrianProjection.Instance.removeAgent(readId, checkedAgent);
+                                    instance.removeAgent(readId, checkedAgent);
                                 }
                                 else //Update the velocity
                                 {
@@ -316,29 +322,25 @@ namespace RVO
                 
 
                     }
-                  //  Debug.Log("Projecting frame" + PedestrianProjection.Instance.frameNumber);
-                    PedestrianProjection.Instance.video.UpdateFrame();
-                    PedestrianProjection.Instance.frameNumber++;
+                  //  Debug.Log("Projecting frame" + instance.frameNumber);
+                    instance.video.UpdateFrame();
+                    instance.frameNumber++;
                 }
                 else
                 {
-                    PedestrianProjection.Instance.isRunning = false;
+                    instance.isRunning = false;
                 }
 
-
-
-
             }
-
-
-
         }
 
+        /*
+         * Remove the agent from the simulation
+         */ 
         internal void removeAgent(int agentId, GameObject agent)
         {
-            //TODO: Remove from simulation too
             RVO.Simulator.Instance.agents_.Remove(agent.GetComponent<ProjectedAgent>().AgentReference);
-            PedestrianProjection.Instance.realAgents.Remove(agentId);
+            instance.realAgents.Remove(agentId);
             Destroy(agent);
         }
     }

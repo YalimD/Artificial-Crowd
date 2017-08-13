@@ -117,12 +117,20 @@ public class GUIController : MonoBehaviour
     Transform collisionCounter;
     Text numOfCollisions, artificialToArtificialCollisions, artificialToProjectedCollisions;
 
+    Button pauseButton;
+    Text simRunning;
+
     void Start()
     {
+        simRunning = transform.Find("VideoPlayer").Find("SimFinished").GetComponent<Text>();
+
+        //Pause button which changes to Play when clicked
+        pauseButton = transform.Find("VideoPlayer").Find("Pause").GetComponent<Button>();
+
         // Adding / Removing agents
-        add = transform.Find("RVOControl").Find("AddArtificial").GetComponent<UnityEngine.UI.Button>();
+        add = transform.Find("RVOControl").Find("AddArtificial").GetComponent<Button>();
         cbAdd = add.colors;
-        remove = transform.Find("RVOControl").Find("RemoveArtificial").GetComponent<UnityEngine.UI.Button>();
+        remove = transform.Find("RVOControl").Find("RemoveArtificial").GetComponent<Button>();
         cbRemove = remove.colors;
 
         neighbours = transform.Find("RVOControl").Find("Neighbours").Find("Slider").GetComponent<Slider>();
@@ -142,8 +150,36 @@ public class GUIController : MonoBehaviour
         artificialToProjectedCollisions = collisionCounter.transform.Find("ArtPro").Find("Text").GetComponent<Text>();
 
     }
+     
+    public void pauseVideo()
+    {
+        if (Camera.main.GetComponent<MyVideoPlayer>().VideoPlaying)
+        {
+            simRunning.text = "Simulation is Paused";
+            pauseButton.GetComponentInChildren<Text>().text = "Resume";
+            Camera.main.GetComponent<MyVideoPlayer>().pauseVideo();
+        }
+        else
+        {
+            simRunning.text = "Simulation is Running";
+            pauseButton.GetComponentInChildren<Text>().text = "Pause";
+            Camera.main.GetComponent<MyVideoPlayer>().resumeVideo();
+        }
 
+    }
 
+    public void stopVideo()
+    {
+        if (Camera.main.GetComponent<MyVideoPlayer>().VideoPlaying)
+        {
+            simRunning.text = "Simulation is Stopped";
+            pauseButton.GetComponentInChildren<Text>().text = "Play";
+            Camera.main.GetComponent<MyVideoPlayer>().stopVideo();
+            selectedAgents = new List<RVO.ArtificialAgent>();
+       }
+
+    }
+    
     //Change the visibility of the artificial Agents
     public void changeArtificialVisibility(bool visibility)
     {
@@ -264,7 +300,13 @@ public class GUIController : MonoBehaviour
     }
 
     public void changeConsideredNeighbours(float numOfNeighbours) { foreach (RVO.ArtificialAgent art in selectedAgents) art.AgentReference.maxNeighbors_ = (int)numOfNeighbours; }
-    public void changeMaxSpeed(string maxSpeed) { foreach (RVO.ArtificialAgent art in selectedAgents) art.AgentReference.maxSpeed_ = int.Parse(maxSpeed); }
+    public void changeMaxSpeed(string maxSpeed) { 
+        foreach (RVO.ArtificialAgent art in selectedAgents) { 
+            art.AgentReference.maxSpeed_ = int.Parse(maxSpeed); 
+            art.GetComponent<UnityEngine.AI.NavMeshAgent>().speed = int.Parse(maxSpeed);
+            art.GetComponent<UnityEngine.AI.NavMeshAgent>().acceleration = 10;
+        } 
+    } //Also changes their navMeshAgent speed
     public void changeRange(string range) { foreach (RVO.ArtificialAgent art in selectedAgents) art.AgentReference.neighborDist_ = int.Parse(range); }
     public void changeReactionSpeed(string reactionSpeed) { foreach (RVO.ArtificialAgent art in selectedAgents) art.AgentReference.timeHorizon_ = int.Parse(reactionSpeed); }
 

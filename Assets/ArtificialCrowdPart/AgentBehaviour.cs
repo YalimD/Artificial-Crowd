@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System;
 
 /*
- * TODO: RENAME THIS CLASS TO MAYBE ARTIFICIAL AGENT FACTORY
  * 
  * Agent Behaviour code extends the simulation code provided by RVO for the
  * spawn and management of the agents. It will also consider the projected agents coming from
@@ -16,7 +15,7 @@ using System;
  * 
  * This class communicates with Pedestrian Projection class for the managemtn of ProjectedAgents (Each has an agent reference)
  * It will cue the Pedestrian Projection to spawn and move the projected agents. This way, both agent types
- * will be managed from a single source, meaning better control. TODO: This isn't really necessary
+ * will be managed from a single source, meaning better control. 
  * 
  * The associated Agent references are managed by their own objects, therefore a centralized control SHOULDN'T be required for RVO.
  * 
@@ -26,13 +25,13 @@ using System;
 
 namespace RVO
 {
-    class AgentBehaviour : MonoBehaviour
+    public sealed class AgentBehaviour : MonoBehaviour
     {
         //temporary vector for holding the goal locations
         private List<Vector2> goals;
 
         //Singleton 
-        private static readonly AgentBehaviour instance = new AgentBehaviour();
+        private static AgentBehaviour instance;
 
         public static AgentBehaviour Instance
         {
@@ -42,14 +41,14 @@ namespace RVO
             }
         }
 
-        public float initialNumberOfAgents = 10;
-        public int numOfAgents { get { return AgentBehaviour.Instance.artificialAgents.Count; } }
-
-       // Dictionary<int, GameObject> artificialAgents; 
-        private GameObject agentModel; //Dummy model for the agents
+        private List<GameObject> agentModels;
+        //private GameObject agentModel; //Dummy models for agents
         private List<GameObject> artificialAgents;
 
-        public List<GameObject> ArtificialAgents { get { return AgentBehaviour.Instance.artificialAgents; } }
+        public List<GameObject> ArtificialAgents { get { return instance.artificialAgents; } }
+
+        public float initialNumberOfAgents = 10;
+        public int numOfAgents { get { return instance.artificialAgents.Count; } }
 
         //OPTIONS FOR RVO ABOUT THE AGENTS
         private int numOfNeighboursConsidered = 20; //Number of neigbours
@@ -60,7 +59,7 @@ namespace RVO
             set { numOfNeighboursConsidered = value; }
         }
 
-        private float neighbourRange = 15f; //The range of visible area
+        private float neighbourRange = 2f; //The range of visible area
 
         public float NeighbourRange
         {
@@ -75,7 +74,7 @@ namespace RVO
             set { maxSpeed = value; }
         }
 
-        private float reactionSpeed = 1000f; //Keep this high, so that agents react to neighbors faster
+        private float reactionSpeed = 100000f; //Keep this high, so that agents react to neighbors faster
 
         public float ReactionSpeed
         {
@@ -85,7 +84,7 @@ namespace RVO
 
         //Are artificial agents visible to user ?
         private bool visibility;
-        public bool Visibility { set { AgentBehaviour.Instance.visibility = value; } get { return AgentBehaviour.Instance.visibility; } }
+        public bool Visibility { set { instance.visibility = value; } get { return instance.visibility; } }
 
         private int AAcollision;
         public int getAACollision() { return AAcollision; }
@@ -113,50 +112,73 @@ namespace RVO
         // Initialize the artificial agents on the area.Assign goals randomly at a radius around the center of the square
         void Start()
         {
-          //  artificialAgents = new Dictionary<int, GameObject>();
-            AgentBehaviour.Instance.artificialAgents = new List<GameObject>();
-            AgentBehaviour.Instance.agentModel = Resources.Load("AgentAngelica", typeof(GameObject)) as GameObject;
-            AgentBehaviour.Instance.instantiateSimulation();
-            ArtificialAgent.selectedMat = Resources.Load("Selected", typeof(Material)) as Material;
-            AgentBehaviour.Instance.visibility = true;
+            instance = new AgentBehaviour();
+            instance.instantiateSimulation();
+        }
 
-            instance.AAcollision = 0;
-            instance.APcollision = 0;
+
+        public void restart()
+        {
+            //Delete all agents in the simulation
+            while (instance.artificialAgents.Count > 0)
+            {
+                Debug.Log("Deleted agent");
+                instance.removeAgent(instance.artificialAgents[0]);
+            }
+            instance = new AgentBehaviour();
+            instance.instantiateSimulation();
+
         }
 
         /*Initializes the goals of the artificial agents
+         * Needs to be random
          */
         private void defineGoals()
         {
-
-            AgentBehaviour.Instance.goals = new List<Vector2>();
-            AgentBehaviour.Instance.goals.Add(new Vector2(-130, -46));
-            AgentBehaviour.Instance.goals.Add(new Vector2(-135, -20));
-            AgentBehaviour.Instance.goals.Add(new Vector2(-100, -60));
-            AgentBehaviour.Instance.goals.Add(new Vector2(-90, -54));
-            AgentBehaviour.Instance.goals.Add(new Vector2(-64, -24));
+            
+            instance.goals = new List<Vector2>();
+            instance.goals.Add(new Vector2(-130, -46));
+            instance.goals.Add(new Vector2(-135, -20));
+            instance.goals.Add(new Vector2(-100, -60));
+            instance.goals.Add(new Vector2(-90, -54));
+            instance.goals.Add(new Vector2(-64, -24));
 
             //Closer to middle area
 
-            AgentBehaviour.Instance.goals.Add(new Vector2(-112, -28));
-            AgentBehaviour.Instance.goals.Add(new Vector2(-112, -33));
-            AgentBehaviour.Instance.goals.Add(new Vector2(-116, -31));
-            AgentBehaviour.Instance.goals.Add(new Vector2(-115, -50));
-            AgentBehaviour.Instance.goals.Add(new Vector2(-110, -49));
-
+            instance.goals.Add(new Vector2(-112, -28));
+            instance.goals.Add(new Vector2(-112, -33));
+            instance.goals.Add(new Vector2(-116, -31));
+            instance.goals.Add(new Vector2(-115, -50));
+            instance.goals.Add(new Vector2(-110, -49));
+            
 
         }
 
         //Clear the simulation, add agents and define goals
         void instantiateSimulation()
         {
-            AgentBehaviour.Instance.defineGoals();
+            //Initiate agent models
+            instance.agentModels = new List<GameObject>();
+            instance.agentModels.Add(Resources.Load("AgentAngelica", typeof(GameObject)) as GameObject);
+            instance.agentModels.Add(Resources.Load("AgentChuan", typeof(GameObject)) as GameObject);
+            instance.agentModels.Add(Resources.Load("AgentDavid", typeof(GameObject)) as GameObject);
+            instance.agentModels.Add(Resources.Load("AgentJenna", typeof(GameObject)) as GameObject);
+
+            
+            instance.artificialAgents = new List<GameObject>();
+            ArtificialAgent.selectedMat = Resources.Load("Selected", typeof(Material)) as Material;
+            instance.visibility = true;
+
+            instance.AAcollision = 0;
+            instance.APcollision = 0;
+
+            instance.defineGoals();
             Simulator.Instance.Clear();
             /* Specify the global time step of the simulation. */
             Simulator.Instance.setTimeStep(1f);
 
             //Initiate the agent properties, these will also help us modify the agent behavior using the RVO simulation
-            Simulator.Instance.setAgentDefaults(AgentBehaviour.Instance.neighbourRange, AgentBehaviour.Instance.numOfNeighboursConsidered, AgentBehaviour.Instance.reactionSpeed, 10.0f, 2f, AgentBehaviour.Instance.maxSpeed, new Vector2(0.0f, 0.0f));
+            Simulator.Instance.setAgentDefaults(instance.neighbourRange, instance.numOfNeighboursConsidered, instance.reactionSpeed, 10.0f, 1.5f, instance.maxSpeed, new Vector2(0.0f, 0.0f));
 
             //Create the initial crowd of agents, depending on the current unocupied locations of the projected agents
             //Actually, we don't need a complicated conversion, the z coordinate will be given to the RVO as y and y coordinate from RVO
@@ -167,26 +189,23 @@ namespace RVO
                 //Generate them at the main area first, with goal of a random exit point (given manualy for now)
                 //Generate random points and goals later (which will be determined individually)
 
-                // SPAWN THEM FROM ANY OF THE GOALS, THE GOAL OF THE AGENT SHOULD BE DIFFERENT FROM ITS ORIGIN
-                Vector2 origin = AgentBehaviour.Instance.goals[(int)Math.Floor(UnityEngine.Random.value * AgentBehaviour.Instance.goals.Count)];
+                Vector2 origin = instance.goals[(int)Math.Floor(UnityEngine.Random.value * instance.goals.Count)];
 
-                origin = AgentBehaviour.Instance.goals[artificialAgentId % AgentBehaviour.Instance.goals.Count];
+                origin = instance.goals[artificialAgentId % instance.goals.Count];
 
-                GameObject newArtAgent = (GameObject)Instantiate(AgentBehaviour.Instance.agentModel, new Vector3(origin.x_, 0f, origin.y_), new Quaternion());
-
+                GameObject newArtAgent = (GameObject)Instantiate(instance.agentModels[(int)Math.Floor(UnityEngine.Random.value * instance.agentModels.Count)], new Vector3(origin.x_, 0f, origin.y_), new Quaternion());
 
                 //Initialize the RVO part of the agent by connecting the reference to the
                 //related new agent
-                int agentId;
-                RVO.Agent agentReference = Simulator.Instance.addAgent(origin, true, out agentId);
-                Simulator.Instance.setAgentPosition(agentId, origin); //TODO: is this necessary ?
+                RVO.Agent agentReference = Simulator.Instance.addResponsiveAgent(origin);
+            //    Simulator.Instance.setAgentPosition(agentReference.id_, origin); //is this necessary ?
 
-                newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentId, agentReference);
+                newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentReference.id_, agentReference);
 
               //  artificialAgents.Add(artificialAgentId, newArtAgent);
-                AgentBehaviour.Instance.artificialAgents.Add(newArtAgent);
+                instance.artificialAgents.Add(newArtAgent);
 
-                newArtAgent.GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(new Vector3((float)AgentBehaviour.Instance.goals[(artificialAgentId + 1) % AgentBehaviour.Instance.goals.Count].x(), 0f, (float)AgentBehaviour.Instance.goals[(artificialAgentId + 1) % AgentBehaviour.Instance.goals.Count].y()));
+                newArtAgent.GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(new Vector3((float)instance.goals[(artificialAgentId + 1) % instance.goals.Count].x(), 0f, (float)instance.goals[(artificialAgentId + 1) % instance.goals.Count].y()));
 
 
             }
@@ -197,11 +216,10 @@ namespace RVO
 
         // Update the RVO simulation 
         void FixedUpdate()
-        //void Update()
         {
             
             //I stop and resume the navmeshagent part as it causes ossilation between navmesh velocity and rvo velocity
-            foreach (GameObject ag in AgentBehaviour.Instance.artificialAgents)
+            foreach (GameObject ag in instance.artificialAgents)
             {
                 ag.GetComponent<ArtificialAgent>().setPreferred();
                 ag.GetComponent<UnityEngine.AI.NavMeshAgent>().Stop();
@@ -209,77 +227,79 @@ namespace RVO
             //Apply the step for determining the required velocity for each agent on the move
             Simulator.Instance.doStep();
 
-            foreach (GameObject ag in AgentBehaviour.Instance.artificialAgents)
+            foreach (GameObject ag in instance.artificialAgents)
             {
                 ag.GetComponent<ArtificialAgent>().updateVelo();
-                ag.GetComponent<UnityEngine.AI.NavMeshAgent>().Resume(); //Resume so that the velocity of the path is recalculated
+                ag.GetComponent<UnityEngine.AI.NavMeshAgent>().isStopped = false;
+         //       ag.GetComponent<UnityEngine.AI.NavMeshAgent>().Resume(); //Resume so that the velocity of the path is recalculated
             }
         }
 
+        //Add the agent to given position in the space
         public void addAgent(Vector3 pos)
         { 
-            //TODO:Where I left
 
             Vector2 origin = new Vector2(pos.x, pos.z);
 
-            GameObject newArtAgent = (GameObject)Instantiate(AgentBehaviour.Instance.agentModel, new Vector3(origin.x_, 0f, origin.y_), new Quaternion());
+            GameObject newArtAgent = (GameObject)Instantiate(instance.agentModels[(int)Math.Floor(UnityEngine.Random.value * instance.agentModels.Count)], new Vector3(origin.x_, 0f, origin.y_), new Quaternion());
 
             //Initialize the RVO part of the agent by connecting the reference to the
             //related new agent
             int agentId;
-            RVO.Agent agentReference = Simulator.Instance.addAgent(origin, true, out agentId);
-            Simulator.Instance.setAgentPosition(agentId, origin); 
+            RVO.Agent agentReference = Simulator.Instance.addResponsiveAgent(origin);
+            Simulator.Instance.setAgentPosition(agentReference.id_, origin);
 
-            newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentId, agentReference);
+            newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentReference.id_, agentReference);
 
             //  artificialAgents.Add(artificialAgentId, newArtAgent);
-            AgentBehaviour.Instance.artificialAgents.Add(newArtAgent);
+            instance.artificialAgents.Add(newArtAgent);
 
         }
 
         internal void removeAgent(GameObject agent)
         {
             RVO.Simulator.Instance.agents_.Remove(agent.GetComponent<ArtificialAgent>().AgentReference);
-            AgentBehaviour.Instance.artificialAgents.Remove(agent);
+            instance.artificialAgents.Remove(agent);
             Destroy(agent);
         }
 
-        internal void adjustNumberOfNeighbours(float value)
-        {
-            AgentBehaviour.Instance.numOfNeighboursConsidered = (int)value;
-            /*
-            foreach (GameObject ag in AgentBehaviour.Instance.artificialAgents)
-            {
-                ag.GetComponent<ArtificialAgent>().AgentReference.maxNeighbors_ = (int)value;
-            }*/
-        }
+        
+        //internal void adjustNumberOfNeighbours(float value)
+        //{
+        //    instance.numOfNeighboursConsidered = (int)value;
+        //    /*
+        //    foreach (GameObject ag in instance.artificialAgents)
+        //    {
+        //        ag.GetComponent<ArtificialAgent>().AgentReference.maxNeighbors_ = (int)value;
+        //    }*/
+        //}
 
-        internal void adjustMaxSpeed(int value)
-        {
-            AgentBehaviour.Instance.maxSpeed = value;
-           /* foreach (GameObject ag in AgentBehaviour.Instance.artificialAgents)
-            {
-                ag.GetComponent<ArtificialAgent>().AgentReference.maxSpeed_ = (int)value;
-            }*/
-        }
+        //internal void adjustMaxSpeed(int value)
+        //{
+        //    instance.maxSpeed = value;
+        //   /* foreach (GameObject ag in instance.artificialAgents)
+        //    {
+        //        ag.GetComponent<ArtificialAgent>().AgentReference.maxSpeed_ = (int)value;
+        //    }*/
+        //}
 
-        internal void adjustRange(float value)
-        {
-            AgentBehaviour.Instance.neighbourRange = value;
-           /* foreach (GameObject ag in AgentBehaviour.Instance.artificialAgents)
-            {
-                ag.GetComponent<ArtificialAgent>().AgentReference.neighborDist_ = (int)value;
-            }*/
-        }
+        //internal void adjustRange(float value)
+        //{
+        //    instance.neighbourRange = value;
+        //   /* foreach (GameObject ag in instance.artificialAgents)
+        //    {
+        //        ag.GetComponent<ArtificialAgent>().AgentReference.neighborDist_ = (int)value;
+        //    }*/
+        //}
 
-        internal void adjustReactionSpeed(float value)
-        {
-            AgentBehaviour.Instance.reactionSpeed = value;
-            /* foreach (GameObject ag in AgentBehaviour.Instance.artificialAgents)
-             {
-                 ag.GetComponent<ArtificialAgent>().AgentReference.neighborDist_ = (int)value;
-             }*/
-        }
+        //internal void adjustReactionSpeed(float value)
+        //{
+        //    instance.reactionSpeed = value;
+        //    /* foreach (GameObject ag in instance.artificialAgents)
+        //     {
+        //         ag.GetComponent<ArtificialAgent>().AgentReference.neighborDist_ = (int)value;
+        //     }*/
+        //}
     }
 }
 /*

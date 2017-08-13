@@ -58,7 +58,6 @@ namespace RVO
                 child.GetComponent<Renderer>().enabled = false;
         }
         void FixedUpdate()
-        //void Update()
         {
             /* Mechanism to get rid of unsyncronized agents:
              * 
@@ -81,12 +80,16 @@ namespace RVO
 
 
             mag = velocity.magnitude;
-            agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z );
-
+            agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z);
             agentReference.position_ = new Vector2(transform.position.x , transform.position.z );
 
             transform.Translate(velocity, Space.World);
-            transform.LookAt(velocity);
+            Quaternion rotation = Quaternion.LookRotation(velocity- transform.position);
+            rotation.x = 0;
+            rotation.z = 0;
+            transform.rotation = Quaternion.Slerp(transform.rotation, rotation, Time.deltaTime * 10f);
+
+         //   transform.LookAt(velocity);
 
             if (PedestrianProjection.Instance.Visibility)
             {

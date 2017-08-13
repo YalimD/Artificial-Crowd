@@ -202,19 +202,16 @@ namespace RVO
         }
 
 
-        /*  Method added by Yalým Doðan
-         *  Adds the agent on the given location and returns its reference and id (through pass by reference). 
-         *  isResponsive determines if the agent is responsive to its enviroment in case of RVO. If false, maxNeighbors is set to 0.
-         */ 
-        public Agent addAgent(Vector2 position, bool isResponsive, out int agentId)
+        /*  Methods added by Yalým Doðan
+         *  Adds the agent on the given location and returns its reference, the agent is irresponsive as it doesn't 
+		 * consider any neighbors
+		 */ 
+        public Agent addResponsiveAgent(Vector2 position)
         {
-
              Agent agent = new Agent();
              agent.id_ = agents_.Count;
 
-             //If the agent is not responsive (projected), the number of neighbors it will notify is 0
-             agent.maxNeighbors_ = (isResponsive) ? defaultAgent_.maxNeighbors_ : 0;
-
+             agent.maxNeighbors_ =  defaultAgent_.maxNeighbors_;
              agent.maxSpeed_ = defaultAgent_.maxSpeed_;
              agent.neighborDist_ = defaultAgent_.neighborDist_;
              agent.position_ = position;
@@ -223,11 +220,25 @@ namespace RVO
              agent.timeHorizonObst_ = defaultAgent_.timeHorizonObst_;
              agent.velocity_ = defaultAgent_.velocity_;
              agents_.Add(agent);
+             
+             return agent;
+        }
+		
+		public Agent addIrresponsiveAgent(Vector2 position)
+        {
+             Agent agent = new Agent();
+             agent.id_ = agents_.Count;
 
-             agentId = agent.id_;
-
-   
-
+             //If the agent is not responsive (projected), the number of neighbors it will notify is 0
+             agent.maxNeighbors_ = 0;
+             agent.maxSpeed_ = defaultAgent_.maxSpeed_;
+             agent.neighborDist_ = defaultAgent_.neighborDist_;
+             agent.position_ = position;
+             agent.radius_ = defaultAgent_.radius_;
+             agent.timeHorizon_ = defaultAgent_.timeHorizon_;
+             agent.timeHorizonObst_ = defaultAgent_.timeHorizonObst_;
+             agent.velocity_ = defaultAgent_.velocity_;
+             agents_.Add(agent);
              
              return agent;
         }
