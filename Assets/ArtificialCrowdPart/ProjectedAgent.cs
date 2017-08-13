@@ -11,13 +11,19 @@ using System.Collections;
  * But the Agent reference inside should be updated with velocity read from file. There is no goal in RVO, just preferred velocity.
  * This enables wandering.
  * 
- * BUT if the simulation ends, the control should be given to ArtificialAgent (the simulation must end ?)
- * 
  */
 namespace RVO
 {
     public class ProjectedAgent : MonoBehaviour
     {
+        //Timelimit of agent to be synced with Agent Projection Class
+        private const int TIMELIMIT = 40;
+
+        //Speed limit for projected agents; used against false positives
+        private const float SPEEDLIMIT = 0.5f;
+
+        private bool isSync;
+        private int timer;
 
         //The RVO:Agent reference
         RVO.Agent agentReference;
@@ -25,8 +31,7 @@ namespace RVO
         // Properties
         private int trackId; //This is the id which is given by the projection 
         private int rvoId;
-        //  private Rigidbody rg;
-        public Vector3 velocity;
+        Vector3 velocity;
 
         //Accessors mutators
         public Vector3 Velocity { set { velocity = value; } get { return velocity; } }
@@ -34,6 +39,7 @@ namespace RVO
         public int TrackId { get; set; }
         public int RvoId { get; set; }
         public RVO.Agent AgentReference { get { return agentReference; } }
+        public bool IsSync { get; set; }
 
         //Constructor need 1 parameter id that is assigned to the agent
         public void createAgent(Vector3 initialVelocity, int trackid, int RVOId, RVO.Agent agentReference)
@@ -43,21 +49,60 @@ namespace RVO
             rvoId = RVOId;
             this.agentReference = agentReference;
             //So that this agent ignores the neighboring agents in RVO. But participates the collision avoidance
+
+            //Is this agent stil in the output file from detection ?
+            isSync = false;
+            timer = 0;
+
+            foreach (Transform child in transform)
+                child.GetComponent<Renderer>().enabled = false;
         }
-
-        void Update()
+        void FixedUpdate()
         {
-            mag = velocity.magnitude;
-            agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z );
+            /* Mechanism to get rid of unsyncronized agents:
+             * 
+             * Update counts the time which the agent didn't get any signal from projection clas. The signal is identified as a flag
+             * When the flag is false, timer counts and destroys this agent upon certain limit.
+             * Else, the timer is reset but the flag too, so that on next Update; timer can start again.
+             * 
+             */
+            if (isSync)
+            {
+                timer = 0;
+                isSync = false;
+            }
+            else
+            {
+                timer++;
+                if(timer > TIMELIMIT)
+                    PedestrianProjection.Instance.removeAgent(trackId, transform.gameObject);
+            }
 
+
+            mag = velocity.magnitude;
+            agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z);
             agentReference.position_ = new Vector2(transform.position.x , transform.position.z );
 
-           // Debug.Log("velocity of agent " + trackId + " is " + velocity);
-            transform.Translate(velocity);
-            transform.LookAt(velocity); 
-            
+            transform.Translate(velocity, Space.World);
+            Quaternion rotation = Quaternion.LookRotation(velocity- transform.position);
+            rotation.x = 0;
+            rotation.z = 0;
+            transform.rotation = Quaternion.Slerp(transform.rotation, rotation, Time.deltaTime * 10f);
 
-            if (velocity.magnitude > 0.5f)
+         //   transform.LookAt(velocity);
+
+            if (PedestrianProjection.Instance.Visibility)
+            {
+                foreach (Transform child in transform)
+                    child.GetComponent<Renderer>().enabled = true;
+            }
+            else
+            {
+                foreach (Transform child in transform)
+                    child.GetComponent<Renderer>().enabled = false;
+            }
+
+            if (velocity.magnitude > SPEEDLIMIT)
             {
                 PedestrianProjection.Instance.removeAgent(trackId, transform.gameObject);
             }
@@ -69,7 +114,6 @@ namespace RVO
         /* Destroy agent if it gets out of mesh. This is checked by removing it
          * when its collider doesn't collide with the walkable mesh anymore
          */
-
         void OnCollisionExit(Collision collisionInfo)
         {
             if (collisionInfo.transform.name == "walkableDebug")
@@ -79,29 +123,5 @@ namespace RVO
             }
         }
         
-        //Ne*ed to implement RVO over these agents
-
-        //Required methods from RVO to work
-        //Reached goal
-        //Change Velocity (setpreferredVelocities)
-        //dostep
-
-        //Intialize the agents as randomly over the area (Do we need to initialize the grid ?)
-        //
-        /*
-        public void FixedUpdate()
-        {
-            if (!sim.reachedGoal())
-            {
-                sim.updateVisualization();
-                sim.setPreferredVelocities();
-
-                //Apply the step for determining the required velocity for each agent on the move
-                FanExploration.clearVisual();
-                Simulator.Instance.doStep();
-
-            }
-        }
-         */
     }
 }

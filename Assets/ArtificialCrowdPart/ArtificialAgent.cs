@@ -2,13 +2,10 @@
 using System;
 using System.Collections;
 
-/*
- *  TODO: This class is associated to artificial agent's PREFAB so it manages its behaviour 
- *  TODO: Each agent type should also have a different material associated with it
- *  
- *  For now, the navigational behavior of the artificial agents are determined by the built-in
- *  navigation mesh.
+/* 
+ * Written by Yalım Doğan
  * 
+ * The logic of the artificial agents
  */
 
 namespace RVO
@@ -16,41 +13,61 @@ namespace RVO
 
     public class ArtificialAgent : MonoBehaviour
     {
+        //Properties
+
+        #region PROPERTY
+
+        //The material to be set when user selects this agent
+        public static Material selectedMat;
+
+        private Material defaultMaterial = null;
+        private Material defaultHairMaterial = null;
 
         //The RVO:Agent reference
         private RVO.Agent agentReference;
-
-        //Properties
+        private Animator anim;
+        private bool selected; //Is this agent currently selected by user to modify its RVO properties
 
         //Reference to navigation agent as it will determine this agent's preferred velocity
-        NavMeshAgent navAgent;
+        UnityEngine.AI.NavMeshAgent navAgent;
         private int agentId;
 
         public int AgentId { get { return agentId; } set { agentId = value; } }
         public RVO.Agent AgentReference { get { return agentReference; } set { agentReference = value; } }
 
-        //Temporary
+        #endregion
+
         public void createAgent(int id, RVO.Agent agentReference)
         {
             agentId = id;
             this.agentReference = agentReference;
-            navAgent = transform.GetComponent<NavMeshAgent>();
+            navAgent = transform.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            anim = transform.GetComponent<Animator>();
+
+            defaultMaterial = transform.Find("body").GetComponent<Renderer>().material;
+            if (transform.Find("hair"))
+                defaultHairMaterial = transform.Find("hair").GetComponent<Renderer>().material;
         }
 
 
-        // Update is called once per frame
-        void Update()
+        // Update is called once per physics step
+        void FixedUpdate()
         {
-            // CUSTOM GOAL SELECTION OPTION
-          /*  if (Input.GetMouseButtonUp(0))
+            // Updating the animations
+            anim.SetFloat("Velocity",navAgent.velocity.magnitude);
+            if (!AgentBehaviour.Instance.Visibility)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (Physics.Raycast(ray, out hit, 100))
-                {
-                    GetComponent<NavMeshAgent>().SetDestination(hit.point);
-                }
-            }*/
+                transform.Find("body").GetComponent<Renderer>().enabled = false;
+                if (defaultHairMaterial)
+                    transform.Find("hair").GetComponent<Renderer>().enabled = false;
+            }
+            else
+            {
+                transform.Find("body").GetComponent<Renderer>().enabled = true;
+                if (defaultHairMaterial)
+                    transform.Find("hair").GetComponent<Renderer>().enabled = true;
+            }
+                
         }
         public void setPreferred ()
         {
@@ -70,10 +87,13 @@ namespace RVO
              * After that, in order to make sure the navAgent and RVO is on the same location, we will locate the navmesh agent according to the result of
              * RVO, as RVO loses precision and that difference shouldn't be allowed to add up.
              */
-            if (navAgent.hasPath && navAgent.velocity.magnitude <= 1)
+            if (navAgent.hasPath && (navAgent.velocity.magnitude <= navAgent.speed))
              {
                 agentReference.position_ = new Vector2(transform.position.x,transform.position.z);
                 agentReference.velocity_ = new Vector2(navAgent.velocity.x, navAgent.velocity.z);
+
+              //  navAgent.acceleration = (navAgent.remainingDistance > 5) ? 10f:2f;
+
                 //agentReference.update();
 
              //   Debug.Log("Agent " + agentId + " with reference pos:" + agentReference.position_);
@@ -82,7 +102,7 @@ namespace RVO
 
              }
 
-            else// if (!agentReference.velocity_.Equals(new Vector2(navAgent.velocity.x, navAgent.velocity.z)))
+            else
              {
                  navAgent.velocity = new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y());
                /*  Debug.Log("Agent " + agentId + " with reference pos:" + agentReference.position_);
@@ -91,22 +111,37 @@ namespace RVO
          
              }
 
-            if (!navAgent.hasPath)
-                Debug.Log("I don't have a path!");
-            //Debug.Log(transform.GetComponent<Collider>().gameObject.name);
-               // if (GetComponent<NavMeshAgent>().hasPath && !agentReference.velocity_.Equals(new Vector2(0f, 0f)) && transform.GetComponent<NavMeshAgent>().velocity.magnitude > 5){
-                    //transform.GetComponent<NavMeshAgent>().velocity = new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y());
-              //      transform.GetComponent<NavMeshAgent>().Warp(new Vector3(agentReference.position_.x(), 3.6f, agentReference.position_.y()));
-                  //  transform.position = new Vector3(agentReference.position_.x(), 4f, agentReference.position_.y());
-        //}
-          //      else if (!GetComponent<NavMeshAgent>().hasPath)
-            //        agentReference.velocity_ = new Vector2(0f, 0f);
+         //   if (!navAgent.hasPath)
+        //        Debug.Log("I don't have a path!");
+
+            Quaternion rotation = Quaternion.LookRotation(navAgent.velocity);
+            rotation.x = 0;
+            rotation.z = 0;
+            transform.rotation = Quaternion.Slerp(transform.rotation, rotation, Time.deltaTime * 1f);
+
+            //Rotate the agent to directly match its orientation
+
+
+            /*
+            Debug.Log(transform.GetComponent<Collider>().gameObject.name);
+                if (GetComponent<NavMeshAgent>().hasPath && !agentReference.velocity_.Equals(new Vector2(0f, 0f)) && transform.GetComponent<NavMeshAgent>().velocity.magnitude > 5){
+                    transform.GetComponent<NavMeshAgent>().velocity = new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y());
+                    transform.GetComponent<NavMeshAgent>().Warp(new Vector3(agentReference.position_.x(), 3.6f, agentReference.position_.y()));
+                    transform.position = new Vector3(agentReference.position_.x(), 4f, agentReference.position_.y());
+        }
+                else if (!GetComponent<NavMeshAgent>().hasPath)
+                    agentReference.velocity_ = new Vector2(0f, 0f);
             
-               // transform.GetComponent<NavMeshAgent>().Move(new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y()) -
-                 //        transform.GetComponent<NavMeshAgent>().velocity);
-                //  Debug.Log("Velocity is:" + new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y()));
-           //     Debug.Log("The Velocity of agent " + agentId + " is: "  + transform.GetComponent<NavMeshAgent>().velocity);
-        }/*
+                transform.GetComponent<NavMeshAgent>().Move(new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y()) -
+                         transform.GetComponent<NavMeshAgent>().velocity);
+                  Debug.Log("Velocity is:" + new Vector3(agentReference.velocity_.x(), 0, agentReference.velocity_.y()));
+                Debug.Log("The Velocity of agent " + agentId + " is: "  + transform.GetComponent<NavMeshAgent>().velocity);
+             */
+        }
+        
+        
+        
+        /*
 
         
             //Debug.Log(GetComponent<NavMeshAgent>().hasPath);
@@ -145,6 +180,44 @@ namespace RVO
                 Debug.Log("The Velocity of agent " + agentId + " is: "  + transform.GetComponent<NavMeshAgent>().velocity);
           //  }
         }*/
+
+
+        //Change the material's emission to highlight the agent
+        //TODO: For making agents invisible, change their albedo's alpha channel to 0
+        internal void setSelected()
+        {
+            this.selected = true;
+            transform.Find("body").GetComponent<Renderer>().material = selectedMat;
+            if (defaultHairMaterial)
+                transform.Find("hair").GetComponent<Renderer>().material = selectedMat;
+        }
+
+        internal void deSelect()
+        {
+            this.selected = false;
+            transform.Find("body").GetComponent<Renderer>().material = defaultMaterial;
+            if (defaultHairMaterial)
+                transform.Find("hair").GetComponent<Renderer>().material = defaultHairMaterial;
+        }
+
+        internal bool isSelected()
+        {
+            return selected;
+        }
+        
+        void OnCollisionExit(Collision collisionInfo)
+        {
+            if (collisionInfo.transform.tag == "Projection")
+            {
+                
+                AgentBehaviour.Instance.incrementProjectedCollision();
+            }
+            else if (collisionInfo.transform.tag == "Agent")
+            {
+                AgentBehaviour.Instance.incrementArtificialCollision();
+            }
+            Debug.Log(collisionInfo.transform.tag);
+        }
     }
 
 }

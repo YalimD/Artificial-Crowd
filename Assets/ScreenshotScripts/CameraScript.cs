@@ -43,7 +43,7 @@ public class CameraScript : MonoBehaviour {
 			for(int i = 0;i < cameras.Length;i++)
 			{
 				cameras[i].enabled = true;
-				Application.CaptureScreenshot("C:\\Users\\Rakosi\\Desktop\\VideoRVO\\Graphic\\Graphic Videos\\Marmara3CamerasStatic\\Screenshot" + (frameNum  + (i * MAXFRAME)) +  ".png");
+				ScreenCapture.CaptureScreenshot("C:\\Users\\Rakosi\\Desktop\\VideoRVO\\Graphic\\Graphic Videos\\Marmara3CamerasStatic\\Screenshot" + (frameNum  + (i * MAXFRAME)) +  ".png");
 				
 				cameras[i].enabled = false;
 				
