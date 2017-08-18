@@ -47,7 +47,7 @@ namespace RVO
 
         public List<GameObject> ArtificialAgents { get { return instance.artificialAgents; } }
 
-        public float initialNumberOfAgents = 10;
+        public float initialNumberOfAgents = 0;
         public int numOfAgents { get { return instance.artificialAgents.Count; } }
 
         //OPTIONS FOR RVO ABOUT THE AGENTS
@@ -59,7 +59,7 @@ namespace RVO
             set { numOfNeighboursConsidered = value; }
         }
 
-        private float neighbourRange = 2f; //The range of visible area
+        private float neighbourRange = 2f * RVOMagnify.magnify; //The range of visible area
 
         public float NeighbourRange
         {
@@ -74,7 +74,7 @@ namespace RVO
             set { maxSpeed = value; }
         }
 
-        private float reactionSpeed = 100000f; //Keep this high, so that agents react to neighbors faster
+        private float reactionSpeed = 10000f; //Keep this high, so that agents react to neighbors faster
 
         public float ReactionSpeed
         {
@@ -137,12 +137,12 @@ namespace RVO
         {
             
             instance.goals = new List<Vector2>();
-            instance.goals.Add(new Vector2(-130, -46));
+           /* instance.goals.Add(new Vector2(-130, -46));
             instance.goals.Add(new Vector2(-135, -20));
             instance.goals.Add(new Vector2(-100, -60));
             instance.goals.Add(new Vector2(-90, -54));
             instance.goals.Add(new Vector2(-64, -24));
-
+            */
             //Closer to middle area
 
             instance.goals.Add(new Vector2(-112, -28));
@@ -178,7 +178,7 @@ namespace RVO
             Simulator.Instance.setTimeStep(1f);
 
             //Initiate the agent properties, these will also help us modify the agent behavior using the RVO simulation
-            Simulator.Instance.setAgentDefaults(instance.neighbourRange, instance.numOfNeighboursConsidered, instance.reactionSpeed, 10.0f, 1.5f, instance.maxSpeed, new Vector2(0.0f, 0.0f));
+            Simulator.Instance.setAgentDefaults(instance.neighbourRange, instance.numOfNeighboursConsidered, instance.reactionSpeed, 10.0f, 0.5f * RVOMagnify.magnify, instance.maxSpeed, new Vector2(0.0f, 0.0f));
 
             //Create the initial crowd of agents, depending on the current unocupied locations of the projected agents
             //Actually, we don't need a complicated conversion, the z coordinate will be given to the RVO as y and y coordinate from RVO
@@ -193,11 +193,12 @@ namespace RVO
 
                 origin = instance.goals[artificialAgentId % instance.goals.Count];
 
+                /* same as the method
                 GameObject newArtAgent = (GameObject)Instantiate(instance.agentModels[(int)Math.Floor(UnityEngine.Random.value * instance.agentModels.Count)], new Vector3(origin.x_, 0f, origin.y_), new Quaternion());
 
                 //Initialize the RVO part of the agent by connecting the reference to the
                 //related new agent
-                RVO.Agent agentReference = Simulator.Instance.addResponsiveAgent(origin);
+                RVO.Agent agentReference = Simulator.Instance.addResponsiveAgent(origin * RVOMagnify.magnify);
             //    Simulator.Instance.setAgentPosition(agentReference.id_, origin); //is this necessary ?
 
                 newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentReference.id_, agentReference);
@@ -205,8 +206,10 @@ namespace RVO
               //  artificialAgents.Add(artificialAgentId, newArtAgent);
                 instance.artificialAgents.Add(newArtAgent);
 
-                newArtAgent.GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(new Vector3((float)instance.goals[(artificialAgentId + 1) % instance.goals.Count].x(), 0f, (float)instance.goals[(artificialAgentId + 1) % instance.goals.Count].y()));
+            //    newArtAgent.GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(new Vector3((float)instance.goals[(artificialAgentId + 1) % instance.goals.Count].x(), 0f, (float)instance.goals[(artificialAgentId + 1) % instance.goals.Count].y()));
+                */
 
+                addAgent(new Vector3(origin.x(),0,origin.y()));
 
             }
 
@@ -217,27 +220,37 @@ namespace RVO
         // Update the RVO simulation 
         void FixedUpdate()
         {
-            
             //I stop and resume the navmeshagent part as it causes ossilation between navmesh velocity and rvo velocity
             foreach (GameObject ag in instance.artificialAgents)
             {
                 ag.GetComponent<ArtificialAgent>().setPreferred();
-                ag.GetComponent<UnityEngine.AI.NavMeshAgent>().Stop();
-           }
+            //    ag.GetComponent<UnityEngine.AI.NavMeshAgent>().Stop();
+            }
             //Apply the step for determining the required velocity for each agent on the move
             Simulator.Instance.doStep();
 
             foreach (GameObject ag in instance.artificialAgents)
             {
+                
                 ag.GetComponent<ArtificialAgent>().updateVelo();
-                ag.GetComponent<UnityEngine.AI.NavMeshAgent>().isStopped = false;
-         //       ag.GetComponent<UnityEngine.AI.NavMeshAgent>().Resume(); //Resume so that the velocity of the path is recalculated
+           //     ag.GetComponent<UnityEngine.AI.NavMeshAgent>().isStopped = false; //Resume so that the velocity of the path is recalculated
             }
+
+
+            Debug.Log(Simulator.Instance.getNumAgents() + "with workers" + Simulator.Instance.GetNumWorkers());
         }
+
 
         //Add the agent to given position in the space
         public void addAgent(Vector3 pos)
-        { 
+        {
+            //I don't know why, but when the simulation starts, any additional agent is ignored, clearing the workers seem
+            // prevent that
+
+            Simulator.Instance.SetNumWorkers(Simulator.Instance.GetNumWorkers());
+            Simulator.Instance.setTimeStep(1f);
+            //Initiate the agent properties, these will also help us modify the agent behavior using the RVO simulation
+            Simulator.Instance.setAgentDefaults(instance.neighbourRange, instance.numOfNeighboursConsidered, instance.reactionSpeed, 10.0f, 0.5f * RVOMagnify.magnify, instance.maxSpeed, new Vector2(0.0f, 0.0f));
 
             Vector2 origin = new Vector2(pos.x, pos.z);
 
@@ -245,15 +258,16 @@ namespace RVO
 
             //Initialize the RVO part of the agent by connecting the reference to the
             //related new agent
-            int agentId;
-            RVO.Agent agentReference = Simulator.Instance.addResponsiveAgent(origin);
-            Simulator.Instance.setAgentPosition(agentReference.id_, origin);
+         //   int agentId;
+            RVO.Agent agentReference = Simulator.Instance.addResponsiveAgent(origin * RVOMagnify.magnify);
+       //     Simulator.Instance.setAgentPosition(agentReference.id_, origin * RVOMagnify.magnify);
 
             newArtAgent.GetComponent<ArtificialAgent>().createAgent(agentReference.id_, agentReference);
 
             //  artificialAgents.Add(artificialAgentId, newArtAgent);
             instance.artificialAgents.Add(newArtAgent);
 
+            //    newArtAgent.GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(new Vector3((float)instance.goals[(artificialAgentId + 1) % instance.goals.Count].x(), 0f, (float)instance.goals[(artificialAgentId + 1) % instance.goals.Count].y()));
         }
 
         internal void removeAgent(GameObject agent)

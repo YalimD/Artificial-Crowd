@@ -80,8 +80,9 @@ namespace RVO
 
 
             mag = velocity.magnitude;
-            agentReference.prefVelocity_ = new Vector2(velocity.x , velocity.z);
-            agentReference.position_ = new Vector2(transform.position.x , transform.position.z );
+            agentReference.prefVelocity_ = new Vector2(velocity.x, velocity.z)  *RVOMagnify.magnify; //TODO: RVOmagnifiy
+            agentReference.velocity_ = new Vector2(velocity.x, velocity.z) * RVOMagnify.magnify;
+            agentReference.position_ = new Vector2(transform.position.x, transform.position.z) *RVOMagnify.magnify; //TODO: RVOmagnifiy
 
             transform.Translate(velocity, Space.World);
             Quaternion rotation = Quaternion.LookRotation(velocity- transform.position);
