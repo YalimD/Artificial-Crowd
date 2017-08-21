@@ -56,7 +56,7 @@ namespace RVO
         private float viewPortScale;
 
         //Determined in editor for which video output to be used
-        private int videoFile = 5;
+        private int videoFile  = 1;
         private string[] frames; //Frames containing the pedestrian information
 
         //As serkan magnified the image for better detection, I need to divide my coordinates with
@@ -82,20 +82,17 @@ namespace RVO
         public bool Visibility { set { instance.visibility = value; } get { return instance.visibility; } }
 
         //Enum for video output files
-        //TODO: DELETE THIS WHEN THE OUTPUT GETS DONE
         enum VideoOutputs
         {
             None,
-            Output,
-            Output2,
-            Output3,
-            Output4,
-            Output6
+            out1,
+            out2
         };
 
         //The execution starts here (Also system is restarted from here upon call)
         public void InitiateProjection()
         {
+            
             //Delete all agents in the simulation if the simulation has been restarted
             List<int> keys= instance.realAgents.Keys.ToList();
 
@@ -109,6 +106,7 @@ namespace RVO
 
             //Read the output file resulted from the video
             string file = ((VideoOutputs)videoFile).ToString() + ".txt";
+            Debug.Log("Name of the output file:" + file);
             instance.frames = System.IO.File.ReadAllLines(@file);
             Debug.Log("Number of frames loaded: " + frames.Length);
 
@@ -126,7 +124,9 @@ namespace RVO
 
             instance.visibility = true;
 
+            //Start the video
             instance.video = GameObject.Find("MainCamera").GetComponent<MyVideoPlayer>();
+            instance.video.StartVideo(info[0]);
 
 
         }
@@ -274,7 +274,7 @@ namespace RVO
 
                             int agentId; //seperate from the readId, as that is used for tracking from the output file, while this is used for tracking in RVO
                             RVO.Vector2 origin = new Vector2(agentPos.x, agentPos.z);
-                            RVO.Agent agentReference = Simulator.Instance.addIrresponsiveAgent(origin);
+                            RVO.Agent agentReference = Simulator.Instance.addIrresponsiveAgent(origin*RVOMagnify.magnify); //TODO: RVOmagnifiy
 
                          //   Simulator.Instance.setAgentPosition(agentReference.id_, origin);
 
@@ -283,7 +283,7 @@ namespace RVO
 
                             instance.realAgents.Add(readId, newAgent);
                             newAgent.GetComponent<ProjectedAgent>().IsSync = true;
-
+                        //    Simulator.Instance.SetNumWorkers(0);
 
                          //   Debug.Log("pos of agent " + readId + " is " + agentPos);
                         }
@@ -342,6 +342,7 @@ namespace RVO
             RVO.Simulator.Instance.agents_.Remove(agent.GetComponent<ProjectedAgent>().AgentReference);
             instance.realAgents.Remove(agentId);
             Destroy(agent);
+            Simulator.Instance.SetNumWorkers(Simulator.Instance.GetNumWorkers());
         }
     }
 }

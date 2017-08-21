@@ -315,6 +315,7 @@ namespace RVO
             SetNumWorkers(0);
         }
 
+
         /**
          * <summary>Performs a simulation step and updates the two-dimensional
          * position and two-dimensional velocity of each agent.</summary>

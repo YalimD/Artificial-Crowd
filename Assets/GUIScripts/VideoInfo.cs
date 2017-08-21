@@ -32,7 +32,7 @@ public class VideoInfo: MonoBehaviour {
         fpsCount = transform.Find("FPSCount").gameObject.GetComponent<Text>();
         name = transform.Find("VideoName").gameObject.GetComponent<Text>();
 
-        name.text = "Video Name: " + Camera.main.GetComponent<MyVideoPlayer>().videoName;
+        name.text = "Video Name: " + Camera.main.GetComponent<MyVideoPlayer>().getVideoName();
     }
 
     //Update the delta time for fps and time of the video

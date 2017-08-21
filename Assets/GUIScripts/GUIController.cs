@@ -48,6 +48,7 @@ public class GUIController : MonoBehaviour
     }
 
     //Remove agent mode
+    //Also deletes any already selected agent
     public void removeAgentMode()
     {
         if (currentMode == 0)
@@ -57,6 +58,9 @@ public class GUIController : MonoBehaviour
             cbRemove.highlightedColor = Color.yellow;
             remove.colors = cbRemove;
             add.interactable = false;
+
+            deleteSelectedAgents();
+
         }
         else
         {
@@ -66,6 +70,8 @@ public class GUIController : MonoBehaviour
             add.interactable = true;
             currentMode = 0;
         }
+
+       
     }
 
 
@@ -192,6 +198,16 @@ public class GUIController : MonoBehaviour
         RVO.PedestrianProjection.Instance.Visibility = visibility;
     }
 
+    public void deleteSelectedAgents()
+    {
+        while (selectedAgents.Count > 0)
+        {
+            RVO.AgentBehaviour.Instance.removeAgent(selectedAgents[0].gameObject);
+            selectedAgents.Remove(selectedAgents[0]);
+        }
+
+    }
+
     public void selectAllAgents()
     {
         foreach (GameObject obj in RVO.AgentBehaviour.Instance.ArtificialAgents)
@@ -201,6 +217,11 @@ public class GUIController : MonoBehaviour
                 obj.GetComponent<RVO.ArtificialAgent>().setSelected();
                 selectedAgents.Add(obj.GetComponent<RVO.ArtificialAgent>());
             }
+        }
+        //If the mode is remove, then just delete the agent
+        if (currentMode == 2)
+        {
+            deleteSelectedAgents();
         }
     }
 
@@ -236,7 +257,7 @@ public class GUIController : MonoBehaviour
             switch (currentMode)
             {
                 case 0: //Select agents
-                    if (Physics.Raycast(ray, out hit, 100) && hit.collider.tag == "Agent")
+                    if (Physics.Raycast(ray, out hit, 100, 1 << 2) && hit.collider.tag == "Agent")
                     {
                         Debug.Log("Hit:" + hit.collider.name);
                         RVO.ArtificialAgent art = hit.collider.transform.GetComponentInParent<RVO.ArtificialAgent>();
@@ -262,10 +283,10 @@ public class GUIController : MonoBehaviour
                     break;
                 case 2://Remove agent
                     ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                    if (Physics.Raycast(ray, out hit, 100) && hit.collider.tag == "Agent")
+                    if (Physics.Raycast(ray, out hit, 100, 1 << 2) && hit.collider.tag == "Agent")
                     {
-                        RVO.AgentBehaviour.Instance.removeAgent(hit.collider.gameObject);
-
+                        RVO.AgentBehaviour.Instance.removeAgent(hit.collider.transform.parent.gameObject);
+                        
                     }
                     neighbours.maxValue = RVO.AgentBehaviour.Instance.numOfAgents;
                     break;
@@ -280,7 +301,7 @@ public class GUIController : MonoBehaviour
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
-            if (currentMode == 0 && Physics.Raycast(ray, out hit, 100) && hit.collider.tag == "Agent")
+            if (currentMode == 0 && Physics.Raycast(ray, out hit, 100, 1 << 2) && hit.collider.tag == "Agent")
             {
                 RVO.ArtificialAgent art = hit.transform.GetComponentInParent<RVO.ArtificialAgent>();
                 if (hit.transform.GetComponentInParent<RVO.ArtificialAgent>().isSelected())
@@ -292,7 +313,8 @@ public class GUIController : MonoBehaviour
             else if (currentMode == 0 && Physics.Raycast(ray, out hit, 100) && hit.collider.tag != "Agent")
             {
                 foreach (RVO.ArtificialAgent agent in selectedAgents)
-                    agent.transform.GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(hit.point);
+                    // agent.transform.GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(hit.point); 
+                    agent.transform.GetComponent<RVO.ArtificialAgent>().setDestination(hit.point);
             }
         }
 
@@ -300,11 +322,11 @@ public class GUIController : MonoBehaviour
     }
 
     public void changeConsideredNeighbours(float numOfNeighbours) { foreach (RVO.ArtificialAgent art in selectedAgents) art.AgentReference.maxNeighbors_ = (int)numOfNeighbours; }
-    public void changeMaxSpeed(string maxSpeed) { 
+    public void changeMaxSpeed(string maxSpeed) { //TODO
         foreach (RVO.ArtificialAgent art in selectedAgents) { 
             art.AgentReference.maxSpeed_ = int.Parse(maxSpeed); 
-            art.GetComponent<UnityEngine.AI.NavMeshAgent>().speed = int.Parse(maxSpeed);
-            art.GetComponent<UnityEngine.AI.NavMeshAgent>().acceleration = 10;
+       //     art.GetComponent<UnityEngine.AI.NavMeshAgent>().speed = int.Parse(maxSpeed);
+         //   art.GetComponent<UnityEngine.AI.NavMeshAgent>().acceleration = 10;
         } 
     } //Also changes their navMeshAgent speed
     public void changeRange(string range) { foreach (RVO.ArtificialAgent art in selectedAgents) art.AgentReference.neighborDist_ = int.Parse(range); }
