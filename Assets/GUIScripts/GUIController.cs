@@ -48,6 +48,7 @@ public class GUIController : MonoBehaviour
     }
 
     //Remove agent mode
+    //Also deletes any already selected agent
     public void removeAgentMode()
     {
         if (currentMode == 0)
@@ -57,6 +58,9 @@ public class GUIController : MonoBehaviour
             cbRemove.highlightedColor = Color.yellow;
             remove.colors = cbRemove;
             add.interactable = false;
+
+            deleteSelectedAgents();
+
         }
         else
         {
@@ -66,6 +70,8 @@ public class GUIController : MonoBehaviour
             add.interactable = true;
             currentMode = 0;
         }
+
+       
     }
 
 
@@ -192,6 +198,16 @@ public class GUIController : MonoBehaviour
         RVO.PedestrianProjection.Instance.Visibility = visibility;
     }
 
+    public void deleteSelectedAgents()
+    {
+        while (selectedAgents.Count > 0)
+        {
+            RVO.AgentBehaviour.Instance.removeAgent(selectedAgents[0].gameObject);
+            selectedAgents.Remove(selectedAgents[0]);
+        }
+
+    }
+
     public void selectAllAgents()
     {
         foreach (GameObject obj in RVO.AgentBehaviour.Instance.ArtificialAgents)
@@ -201,6 +217,11 @@ public class GUIController : MonoBehaviour
                 obj.GetComponent<RVO.ArtificialAgent>().setSelected();
                 selectedAgents.Add(obj.GetComponent<RVO.ArtificialAgent>());
             }
+        }
+        //If the mode is remove, then just delete the agent
+        if (currentMode == 2)
+        {
+            deleteSelectedAgents();
         }
     }
 
@@ -264,8 +285,8 @@ public class GUIController : MonoBehaviour
                     ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                     if (Physics.Raycast(ray, out hit, 100, 1 << 2) && hit.collider.tag == "Agent")
                     {
-                        RVO.AgentBehaviour.Instance.removeAgent(hit.collider.gameObject);
-
+                        RVO.AgentBehaviour.Instance.removeAgent(hit.collider.transform.parent.gameObject);
+                        
                     }
                     neighbours.maxValue = RVO.AgentBehaviour.Instance.numOfAgents;
                     break;

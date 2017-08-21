@@ -1,33 +1,21 @@
 CURRENT BUGS
 
-- Shadow script should be investigated
-
-- The animation of the artificial agents seems out of place
-	- Mostly because the animation controller 
-	- Their rotation while moving should be cleared (sliding)
 - There are problems in RVO where the parameters should be improved.
-- Navigation Problems
-- Nav mesh agent movement is buggy, as for a second it readjusts itself but it is too visible
-- The posture of projected agents should be corrected (Not urgent)
-	- This needs to be done in a manner close to navmeshagent where the rotation takes time as natural
+- WHen the agent is forcily moved, it should return to its position rather than takin away by the crowd
+ - Maybe hold the forced position and after a while, set it as destination (unless another destination comes)
 
 
 FUTURE FEATURES
 
 GUI (Interface)
-- Parameters for agents work but not sure if they really affect the agents ? (Needs testing)
-- Rewinding for later
 - (In future, selecting custom video)
 
 Artificial Agents
 
-- The agents should have varied appereances which are determined randomly
 - Because there will be OCEAN on top of the system, there can also be an option which determines the
 general mood of the crowd
 - The agents should interact with eachother in the presence of near agents (which are also idle, which means 
 avaliable for initiating a conversation)
-- Multiple collisions can be avoided by holdg the latest collided agent
-- Change the model's pivot point so that they can be spawned according to their feet
 
 FUTURE THESİS TO DOS:
 - Working on meanshift etc for navigable area generation and debugging using the provided walkableDebug mesh
