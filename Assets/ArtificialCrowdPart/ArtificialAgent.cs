@@ -125,11 +125,10 @@ namespace RVO
             }
             else
             {
-                Debug.Log("Staying");
                 pathStatus = 0;
                 path = null;
-                setDestination(transform.position);
             }
+
 
             agentReference.prefVelocity_ = goalDirection * RVOMagnify.magnify;
         }

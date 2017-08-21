@@ -275,7 +275,6 @@ namespace RVO
             RVO.Simulator.Instance.agents_.Remove(agent.GetComponent<ArtificialAgent>().AgentReference);
             instance.artificialAgents.Remove(agent);
             Destroy(agent);
-            Simulator.Instance.SetNumWorkers(Simulator.Instance.GetNumWorkers());
         }
 
         
