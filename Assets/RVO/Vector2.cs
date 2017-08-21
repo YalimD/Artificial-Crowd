@@ -193,6 +193,5 @@ namespace RVO
         {
             return new Vector2(-vector.x_, -vector.y_);
         }
-
     }
 }
