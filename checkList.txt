@@ -1,0 +1,23 @@
+CURRENT BUGS
+
+- There are problems in RVO where the parameters should be improved.
+- WHen the agent is forcily moved, it should return to its position rather than takin away by the crowd
+ - Maybe hold the forced position and after a while, set it as destination (unless another destination comes)
+
+
+FUTURE FEATURES
+
+GUI (Interface)
+- (In future, selecting custom video)
+
+Artificial Agents
+
+- Because there will be OCEAN on top of the system, there can also be an option which determines the
+general mood of the crowd
+- The agents should interact with eachother in the presence of near agents (which are also idle, which means 
+avaliable for initiating a conversation)
+
+FUTURE THESİS TO DOS:
+- Working on meanshift etc for navigable area generation and debugging using the provided walkableDebug mesh
+- Generating the mesh from walkable areas (polygons)
+- Adapting the mesh to mutiple layers for ARA*
